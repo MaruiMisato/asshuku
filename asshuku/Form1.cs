@@ -257,7 +257,7 @@ namespace asshuku {
                         }
                     }
                 }
-                //Marshal.Copy(buf,0,data.Scan0,buf.Length);
+                Marshal.Copy(buf,0,data.Scan0,buf.Length);
                 bmp.UnlockBits(data);
                 bmp.Dispose();
                 Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
