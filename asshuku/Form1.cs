@@ -31,24 +31,6 @@ namespace asshuku {
                 }
             }
         }
-        private bool GetHistgram(ref string f,int[] histgram) {
-            Bitmap bmp=new Bitmap(f);
-            BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
-            byte[] buf=new byte[bmp.Width*bmp.Height*4];
-            Marshal.Copy(data.Scan0,buf,0,buf.Length);
-            for(int i=0;i<buf.Length;i+=4) {
-                if(buf[i]!=buf[i+1]||buf[i+2]!=buf[i]) {
-                    bmp.UnlockBits(data);
-                    bmp.Dispose();
-                    return false;//Color images are not executed.
-                }
-                histgram[buf[i]]++;
-            }
-            //Marshal.Copy(buf,0,data.Scan0,buf.Length);
-            bmp.UnlockBits(data);
-            bmp.Dispose();
-            return true;
-        }
         private bool GetHistgramR(ref string f,int[] histgram) {
             bool grayscale=true;
             Bitmap bmp=new Bitmap(f);
@@ -163,69 +145,12 @@ namespace asshuku {
                 }
             }
         }
-        /*private void HiFuMiYo(IplImage p_img,byte threshold,ref int hi,ref int fu,ref int mi,ref int yo) {
-            unsafe {
-                byte* p=(byte*)p_img.ImageData;
-                for(int y=0;y<p_img.Height-1;y++) {//Y上取得
-                    int yoffset=(p_img.WidthStep*y);
-                    int l=0;
-                    for(int x=0;x<p_img.Width-1;x++) {
-                        int offset=yoffset+p_img.NChannels*x;
-                        if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold))++l;
-                    }if(l>0) {
-                        for(int yy=1;((l<5)&&(yy<5)&&(y+yy)<p_img.Height-1);++yy) {
-                            int yyyoffset=(p_img.WidthStep*(y+yy));
-                            for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+p_img.NChannels*x]<threshold)++l;
-                        }if(l>=5) {hi=y;y=int.MaxValue-1;break;}
-                    }
-                }
-                for(int y=p_img.Height-1;y>hi;--y) {//Y下取得
-                    int yoffset=(p_img.WidthStep*y);
-                    int l=0;
-                    for(int x=0;x<p_img.Width-1;x++) {
-                        int offset=yoffset+p_img.NChannels*x;
-                        if(p[offset]<threshold) if((p[(offset-p_img.WidthStep)]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[(offset+p_img.NChannels)-p_img.WidthStep]<threshold))++l;
-                    }if(l>0) {
-                        for(int yy=-4;((l<5)&&(yy<0)&&(y+yy)>hi);++yy) {
-                            int yyyoffset=(p_img.WidthStep*(y+yy));
-                            for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+p_img.NChannels*x]<threshold)++l;
-                        }if(l>=5) {mi=y;y=0;break;}
-                    }
-                }
-                for(int x=0;x<p_img.Width-1;x++) {//X左取得
-                    int xoffset=p_img.NChannels*x;
-                    int l=0;
-                    for(int y=hi;y<mi-1;y++) {
-                        int offset=p_img.WidthStep*y+xoffset;
-                        if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold))++l;
-                    }if(l>0) {
-                        for(int xx=1;((l<5)&&(xx<5)&&(x+xx)<p_img.Width-1);++xx) {
-                            int xxxoffset=p_img.NChannels*(x+xx);
-                            for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
-                        }if(l>=5) {fu=x;x=int.MaxValue-1;break;}
-                    }
-                }
-                for(int x=p_img.Width-1;x>fu;--x) {//X右取得
-                    int xoffset=p_img.NChannels*x;
-                    int l=0;
-                    for(int y=hi;y<mi;y++) {
-                        int offset=p_img.WidthStep*y+xoffset;
-                        if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[(offset-p_img.NChannels)]<threshold)||(p[(offset-p_img.NChannels)+p_img.WidthStep]<threshold))++l;
-                    }if(l>0) {
-                        for(int xx=-4;((l<5)&&(xx<0)&&(x+xx)>fu);++xx) {
-                            int xxxoffset=p_img.NChannels*(x+xx);
-                            for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
-                        }if(l>=5) {yo=x;x=0;break;}
-                    }
-                }
-            }
-        }/**/
         private void HiFuMiYoBlack(IplImage p_img,byte threshold,ref int hi,ref int fu,ref int mi,ref int yo) {
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
                 for(int y=0;y<p_img.Height-1-4;y++) {//Y上取得
-                    int []l=new int [5];
                     if(y==0){
+                        int[] l=new int[5];
                         for(int yy = 0;((yy<5)&&(y+yy)<p_img.Height-1);++yy) {
                             int yyyoffset = (p_img.WidthStep*(y+yy));
                             for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+p_img.NChannels*x]<threshold)++l[yy];
@@ -234,15 +159,15 @@ namespace asshuku {
                             hi=y; y=int.MaxValue-1; break;
                         }
                     } else {
-                        int yyyoffset=(p_img.WidthStep*(y+4));//l[0]=l[1]; l[1]=l[2]; l[2]=l[3]; l[3]=l[4];
-                        l[4]=0;
-                        for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+p_img.NChannels*x]<threshold) ++l[4];
-                        if((p_img.Width!=l[4])) {hi=y; y=int.MaxValue-1; break;}
+                        int l=0;
+                        int yyyoffset=(p_img.WidthStep*(y+4));
+                        for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+p_img.NChannels*x]<threshold) ++l;
+                        if((p_img.Width!=l)) {hi=y; y=int.MaxValue-1; break;}
                     }
                 }
                 for(int y=p_img.Height-1;y>(hi+4);--y) {//Y下取得
-                    int[] l=new int[5];
                     if(y==p_img.Height-1) {
+                        int[] l=new int[5];
                         for(int yy=-4;((yy<1)&&(y+yy)>hi);++yy) {
                             int yyyoffset=(p_img.WidthStep*(y+yy));
                             for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+p_img.NChannels*x]<threshold)++l[-yy];
@@ -252,14 +177,14 @@ namespace asshuku {
                         }
                     } else {
                         int yyyoffset=(p_img.WidthStep*(y-4));
-                        l[4]=0;
-                        for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+p_img.NChannels*x]<threshold)++l[4];
-                        if((p_img.Width!=l[4])) {mi=y;y=0;break;}
+                        int l=0;
+                        for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+p_img.NChannels*x]<threshold)++l;
+                        if((p_img.Width!=l)) {mi=y;y=0;break;}
                     }
                 }
                 for(int x=0;x<p_img.Width-1-4;x++) {//X左取得
-                    int[] l=new int[5];
                     if(x==0) {
+                        int[] l=new int[5];
                         for(int xx=0;((xx<5)&&(x+xx)<p_img.Width-1);++xx) {
                             int xxxoffset=p_img.NChannels*(x+xx);
                             for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[xx];
@@ -269,14 +194,14 @@ namespace asshuku {
                         }
                     } else {
                         int xxxoffset=p_img.NChannels*(x+4);
-                        l[4]=0;
-                        for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[4];
-                        if((mi-hi)!=l[4]) {fu=x;x=int.MaxValue-1;break;}
+                        int l=0;
+                        for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
+                        if((mi-hi)!=l) {fu=x;x=int.MaxValue-1;break;}
                     }
                 }
                 for(int x=p_img.Width-1;x>(fu+4);--x) {//X右取得
-                    int[] l=new int[5];
                     if(x==p_img.Width-1) {
+                        int[] l=new int[5];
                         for(int xx=-4;((xx<0)&&(x+xx)>fu);++xx) {
                             int xxxoffset=p_img.NChannels*(x+xx);
                             for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[-xx];
@@ -286,9 +211,9 @@ namespace asshuku {
                         }
                     } else {
                         int xxxoffset=p_img.NChannels*(x-4);
-                        l[4]=0;
-                        for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[4];
-                        if((mi-hi)!=l[4]) {yo=x;x=0;break;}
+                        int l=0;
+                        for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
+                        if((mi-hi)!=l) {yo=x;x=0;break;}
                     }
                 }
             }
@@ -310,8 +235,8 @@ namespace asshuku {
                             for(int x=fu;x<=yo;++x)q[qyoffset+(x-fu)]=(byte)((255.99/range)*(p[yoffset+p_img.NChannels*x]-min));//255.99ないと255が254になる
                         }
                     img.Dispose();
-                    Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
                 }
+                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
         private void WhiteCutColor(ref string f,int hi,int fu,int mi,int yo,byte min) {//階調値線形変換は現状しない
@@ -325,9 +250,10 @@ namespace asshuku {
                     for(int y=hi;y<=mi;++y) {
                         int yoffset=bmp.Width*4*y,qyoffset=q_img.WidthStep*(y-hi);
                         for(int x=fu;x<=yo;++x) {
-                            q[0+qyoffset+3*(x-fu)]=buf[0+yoffset+4*x];
-                            q[1+qyoffset+3*(x-fu)]=buf[1+yoffset+4*x];
-                            q[2+qyoffset+3*(x-fu)]=buf[2+yoffset+4*x];
+                            int offset=yoffset+4*x,qoffset=qyoffset+3*(x-fu);
+                            q[0+qoffset]=buf[0+offset];
+                            q[1+qoffset]=buf[1+offset];
+                            q[2+qoffset]=buf[2+offset];
                         }
                     }
                 }
@@ -355,22 +281,18 @@ namespace asshuku {
                         if(grayscale) {
                             NoiseRemoveTwoArea(src_img,max);
                             HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
-                            //HiFuMiYo(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
                             //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                             if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
                             WhiteCut(ref f,src_img,hi,fu,mi,yo,min,max-=min);
                         } else {
                             using(IplImage gry_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
-                                //Cv.ShowImage("Target Image",gry_img);
-                                //Cv.WaitKey(0);
                                 NoiseRemoveTwoArea(gry_img,max);
                                 HiFuMiYoWhite(gry_img,threshold,ref hi,ref fu,ref mi,ref yo);
-                                //HiFuMiYo(gry_img,threshold,ref hi,ref fu,ref mi,ref yo);
                                 //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                                 if((hi==0)&&(fu==0)&&(mi==gry_img.Height-1)&&(yo==gry_img.Width-1))HiFuMiYoBlack(gry_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
                                 WhiteCutColor(ref f,hi,fu,mi,yo,min);
                             }
-                        }/**/
+                        }
                     } 
                 }
             });
@@ -413,13 +335,13 @@ namespace asshuku {
                         if((file.Name[0]!='z'))file.MoveTo((PathName+"/z"+file.Name));//000->z000
                     }
                     string[] NewFileName=new string[MaxFile];
-                    if(NewFileName.Length<35) {//一桁で1-y
+                    if(radioButton2.Checked==true&&MaxFile<=26*25) {//7zip under 26*25=650
+                        int MaxRoot=((int)Math.Sqrt(MaxFile))+1;
+                        richTextBox1.Text+="\nroot MaxRoot"+MaxRoot;
+                        for(int i=0;i<NewFileName.Length;++i)NewFileName[i]=((char)((i/MaxRoot)+'a'))+((char)((i%MaxRoot)+'a')).ToString();//26*25  36*35mezasu
+                    } else if(MaxFile<35) {//一桁で1-y
                         for(int i=0;(i<NewFileName.Length)&&(i<10);++i)NewFileName[i]=i.ToString();//0 ~ 9
                         for(int i=10;i<NewFileName.Length;++i)NewFileName[i]=((char)((i-10)+'a')).ToString();//a~y
-                    } else if(radioButton2.Checked==true&&NewFileName.Length<=26*25) {//7zip under 26*25=650
-                        int MaxRoot=((int)Math.Sqrt(NewFileName.Length))+1;
-                        richTextBox1.Text+="\nroot MaxRoot"+MaxRoot;
-                        for(int i=0;i<NewFileName.Length;++i)NewFileName[i]=((char)((i/MaxRoot)+'a'))+((char)((i%MaxRoot)+'a')).ToString();//26*25
                     } else {//zip under 36*25+100=1000
                         for(int i=0;(i<NewFileName.Length)&&(i<100);++i)NewFileName[i]=i.ToString();//0 ~ 99 zipではこの法が軽い
                         char[] y1=new char[36];
