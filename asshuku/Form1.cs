@@ -33,25 +33,24 @@ namespace asshuku {
         }
         private bool GetHistgramR(ref string f,int[] histgram) {
             bool grayscale=true;
-            Bitmap bmp=new Bitmap(f);
-            BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
-            byte[] buf=new byte[bmp.Width*bmp.Height*4];
-            Marshal.Copy(data.Scan0,buf,0,buf.Length);
-            for(int i=0;i<buf.Length;i+=4) {
-                if(grayscale==false||buf[i]!=buf[i+1]||buf[i+2]!=buf[i]) { //Color images are not executed.
-                    grayscale=false;
-                    histgram[(buf[i]+buf[i+1]+buf[i+2])/3]++;
-                }
-                else histgram[buf[i]]++;
+            using(Bitmap bmp=new Bitmap(f)) {
+                BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
+                byte[] buf=new byte[bmp.Width*bmp.Height*4];
+                Marshal.Copy(data.Scan0,buf,0,buf.Length);
+                for(int i=0;i<buf.Length;i+=4) {
+                    if(grayscale==false||buf[i]!=buf[i+1]||buf[i+2]!=buf[i]) { //Color images are not executed.
+                        grayscale=false;
+                        histgram[(buf[i]+buf[i+1]+buf[i+2])/3]++;
+                    }
+                    else histgram[buf[i]]++;
+                }//Marshal.Copy(buf,0,data.Scan0,buf.Length);
+                bmp.UnlockBits(data);
             }
-            //Marshal.Copy(buf,0,data.Scan0,buf.Length);
-            bmp.UnlockBits(data);
-            bmp.Dispose();
             return grayscale;
         }
         private void NoiseRemoveTwoArea(IplImage p_img,byte max) {
-            unsafe {
-                using(IplImage q_img=Cv.CreateImage(Cv.GetSize(p_img),BitDepth.U8,p_img.NChannels)) { 
+            using(IplImage q_img=Cv.CreateImage(Cv.GetSize(p_img),BitDepth.U8,p_img.NChannels)) {
+                unsafe {
                     byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
                     for(int y=0;y<q_img.ImageSize;y+=p_img.NChannels)q[y]=p[y]<max?(byte)0:(byte)255;//First, binarize
                     for(int y=1;y<q_img.Height-1;y++) {
@@ -222,45 +221,42 @@ namespace asshuku {
             using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
                 unsafe {
                     byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
-                    System.Drawing.Image img=System.Drawing.Image.FromFile(f);
-                    //logs.Items.Add(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat));
-                    if(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat)<8) {//1pixel当たり4,2,1bitの明らかに最適化済みの画像は，階調値変換が不要
-                        for(int y=hi;y<=mi;++y) {
-                            int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
-                            for(int x=fu;x<=yo;++x)q[qyoffset+(x-fu)]=p[yoffset+p_img.NChannels*x];
-                        }
-                    } else 
-                        for(int y=hi;y<=mi;++y) {
-                            int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
-                            for(int x=fu;x<=yo;++x)q[qyoffset+(x-fu)]=(byte)((255.99/range)*(p[yoffset+p_img.NChannels*x]-min));//255.99ないと255が254になる
-                        }
-                    img.Dispose();
-                }
-                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                    using(System.Drawing.Image img=System.Drawing.Image.FromFile(f)) {
+                        //logs.Items.Add(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat));
+                        if(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat)<8) {//1pixel当たり4,2,1bitの明らかに最適化済みの画像は，階調値変換が不要
+                            for(int y=hi;y<=mi;++y) {
+                                int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
+                                for(int x=fu;x<=yo;++x)q[qyoffset+(x-fu)]=p[yoffset+p_img.NChannels*x];
+                            }
+                        } else 
+                            for(int y=hi;y<=mi;++y) {
+                                int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
+                                for(int x=fu;x<=yo;++x)q[qyoffset+(x-fu)]=(byte)((255.99/range)*(p[yoffset+p_img.NChannels*x]-min));//255.99ないと255が254になる
+                            }
+                    }
+                }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
         private void WhiteCutColor(ref string f,int hi,int fu,int mi,int yo,byte min) {//階調値線形変換は現状しない
             using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                Bitmap bmp=new Bitmap(f);
-                BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
-                byte[] buf=new byte[bmp.Width*bmp.Height*4];
-                Marshal.Copy(data.Scan0,buf,0,buf.Length);
-                unsafe {
-                    byte* q=(byte*)q_img.ImageData;
-                    for(int y=hi;y<=mi;++y) {
-                        int yoffset=bmp.Width*4*y,qyoffset=q_img.WidthStep*(y-hi);
-                        for(int x=fu;x<=yo;++x) {
-                            int offset=yoffset+4*x,qoffset=qyoffset+3*(x-fu);
-                            q[0+qoffset]=buf[0+offset];
-                            q[1+qoffset]=buf[1+offset];
-                            q[2+qoffset]=buf[2+offset];
+                using(Bitmap bmp=new Bitmap(f)) {
+                    BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
+                    byte[] buf=new byte[bmp.Width*bmp.Height*4];
+                    Marshal.Copy(data.Scan0,buf,0,buf.Length);
+                    unsafe {
+                        byte* q=(byte*)q_img.ImageData;
+                        for(int y=hi;y<=mi;++y) {
+                            int yoffset=bmp.Width*4*y,qyoffset=q_img.WidthStep*(y-hi);
+                            for(int x=fu;x<=yo;++x) {
+                                int offset=yoffset+4*x,qoffset=qyoffset+3*(x-fu);
+                                q[0+qoffset]=buf[0+offset];
+                                q[1+qoffset]=buf[1+offset];
+                                q[2+qoffset]=buf[2+offset];
+                            }
                         }
-                    }
-                }
-                //Marshal.Copy(buf,0,data.Scan0,buf.Length);
-                bmp.UnlockBits(data);
-                bmp.Dispose();
-                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                    }//Marshal.Copy(buf,0,data.Scan0,buf.Length);
+                    bmp.UnlockBits(data);
+                }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
         private void PNGRemove(string PathName) {
