@@ -50,26 +50,27 @@
             // 
             // logs
             // 
+            this.logs.BackColor = System.Drawing.SystemColors.Window;
             this.logs.FormattingEnabled = true;
             this.logs.ItemHeight = 12;
-            this.logs.Location = new System.Drawing.Point(1, 101);
+            this.logs.Location = new System.Drawing.Point(1, 60);
             this.logs.Name = "logs";
-            this.logs.Size = new System.Drawing.Size(411, 328);
+            this.logs.Size = new System.Drawing.Size(411, 376);
             this.logs.TabIndex = 3;
             // 
             // richTextBox1
             // 
             this.richTextBox1.Location = new System.Drawing.Point(1, 1);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(411, 98);
+            this.richTextBox1.Size = new System.Drawing.Size(411, 57);
             this.richTextBox1.TabIndex = 5;
             this.richTextBox1.Text = "";
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(411, 203);
+            this.button1.Location = new System.Drawing.Point(411, 156);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(204, 226);
+            this.button1.Size = new System.Drawing.Size(204, 280);
             this.button1.TabIndex = 6;
             this.button1.Text = "Rename -> PNGOptimize -> Zip \r\n画像入りフォルダをコピーしてここを押す.\r\n複数フォルダも可能.\r\n\r\n\r\n圧縮形式･レベルは三択";
             this.button1.UseVisualStyleBackColor = true;
@@ -79,7 +80,7 @@
             // 
             this.button2.Location = new System.Drawing.Point(411, 1);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(119, 98);
+            this.button2.Size = new System.Drawing.Size(119, 57);
             this.button2.TabIndex = 13;
             this.button2.Text = "FolderBrowserDialog";
             this.button2.UseVisualStyleBackColor = true;
@@ -177,7 +178,7 @@
             this.groupBox1.Controls.Add(this.radioButton1);
             this.groupBox1.Controls.Add(this.radioButton2);
             this.groupBox1.Controls.Add(this.radioButton3);
-            this.groupBox1.Location = new System.Drawing.Point(411, 101);
+            this.groupBox1.Location = new System.Drawing.Point(412, 60);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(126, 96);
             this.groupBox1.TabIndex = 11;
@@ -189,7 +190,7 @@
             this.groupBox2.Controls.Add(this.radioButton6);
             this.groupBox2.Controls.Add(this.radioButton5);
             this.groupBox2.Controls.Add(this.radioButton4);
-            this.groupBox2.Location = new System.Drawing.Point(544, 101);
+            this.groupBox2.Location = new System.Drawing.Point(545, 60);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(70, 96);
             this.groupBox2.TabIndex = 12;
@@ -202,7 +203,7 @@
             this.groupBox3.Controls.Add(this.radioButton7);
             this.groupBox3.Location = new System.Drawing.Point(531, 1);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(84, 98);
+            this.groupBox3.Size = new System.Drawing.Size(84, 57);
             this.groupBox3.TabIndex = 14;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "PNGOptimize";
