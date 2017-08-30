@@ -222,7 +222,6 @@ namespace asshuku {
                 unsafe {
                     byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
                     using(System.Drawing.Image img=System.Drawing.Image.FromFile(f)) {
-                        //logs.Items.Add(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat));
                         if(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat)<8) {//1pixel当たり4,2,1bitの明らかに最適化済みの画像は，階調値変換が不要
                             for(int y=hi;y<=mi;++y) {
                                 int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
@@ -332,22 +331,26 @@ namespace asshuku {
                     }
                     string[] NewFileName=new string[MaxFile];
                     if(radioButton2.Checked==true&&MaxFile<=26*25) {//7zip under 26*25=650
-                        int MaxRoot=((int)Math.Sqrt(MaxFile))+1;
+                        int MaxRoot=(int)Math.Sqrt(MaxFile)+1;
                         richTextBox1.Text+="\nroot MaxRoot"+MaxRoot;
-                        for(int i=0;i<NewFileName.Length;++i)NewFileName[i]=((char)((i/MaxRoot)+'a'))+((char)((i%MaxRoot)+'a')).ToString();//26*25  36*35mezasu
+                        /*char[] y1=new char[MaxRoot];
+                        for(int i=0;i<10&&i<y1.Length;++i)y1[i]=(char)(i+'0');//0 ~ 9
+                        for(int i=10;i<y1.Length;++i)y1[i]=(char)((i-10)+'a');//a~y
+                        for(int i=0;i<NewFileName.Length;++i)NewFileName[i]+=(y1[i/MaxRoot])+(y1[i%MaxRoot]).ToString();
+                        ///**/for(int i=0;i<NewFileName.Length;++i)NewFileName[i]=(char)((i/MaxRoot)+'a')+((char)(i%MaxRoot+'a')).ToString();//26*25  36*35mezasu
                     } else if(MaxFile<35) {//一桁で1-y
                         for(int i=0;(i<NewFileName.Length)&&(i<10);++i)NewFileName[i]=i.ToString();//0 ~ 9
                         for(int i=10;i<NewFileName.Length;++i)NewFileName[i]=((char)((i-10)+'a')).ToString();//a~y
                     } else {//zip under 36*25+100=1000
-                        for(int i=0;(i<NewFileName.Length)&&(i<100);++i)NewFileName[i]=i.ToString();//0 ~ 99 zipではこの法が軽い
                         char[] y1=new char[36];
                         for(int i=0;i<10;++i)y1[i]=(char)(i+'0');//0 ~ 9
-                        for(int i=10;i<y1.Length;++i)y1[i]=(char)((i-10)+'a');//a~y
-                        for(int i=100;i<NewFileName.Length;++i)NewFileName[i]+=((char)(((i-100)/36)+'a'))+(y1[(i-100)%36]).ToString();
+                        for(int i=10;i<y1.Length;++i)y1[i]=(char)(i-10+'a');//a~y
+                        for(int i=0;(i<NewFileName.Length)&&(i<100);++i)NewFileName[i]=i.ToString();//0 ~ 99 zipではこの法が軽い
+                        for(int i=100;i<NewFileName.Length;++i)NewFileName[i]+=(char)(((i-100)/36)+'a')+(y1[(i-100)%36]).ToString();
                     }
                     ReNameAlfaBeta(PathName,ref files,NewFileName);
                     if(radioButton7.Checked==true)PNGRemove(PathName);
-                    if(radioButton3.Checked==true){
+                    if(radioButton3.Checked==true) {//Ionic.Zip
                         Ionic.Zip.ZipFile zip=new Ionic.Zip.ZipFile();//Create a ZIP archive
                         if(radioButton4.Checked==true)zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Level9;//max
                         else if(radioButton5.Checked==true)zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Default;//Default
@@ -356,7 +359,7 @@ namespace asshuku {
                             ZipEntry entry=zip.AddFile(f);//Add a file
                             entry.FileName=new FileInfo(f).Name;
                         } 
-                        zip.Save(PathName+".zip");//Task.Run(()=>{});//Create a ZIP archive
+                        zip.Save(PathName+".zip");////Create a ZIP archive
                     } else {
                         string Extension="zip";
                         if(radioButton2.Checked==true)Extension="7z";
