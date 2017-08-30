@@ -92,13 +92,10 @@ namespace asshuku {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
                         for(int x=0;x<p_img.Width-1;x++) {
                             int offset=yyyoffset+p_img.NChannels*x;
-                            if(p[offset]<threshold)if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) {
-                                    l=yy+1;
-                                    break;
-                                }
+                            if(p[offset]<threshold)if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) {l=yy+1;break;}
                         }
-                    }if(l==5) {hi=y;break;
-                    } else y+=l;
+                    }if(l==5) {hi=y;break;} 
+                    else y+=l;
                 }
                 for(int y=p_img.Height-1;y>hi;--y) {//Y下取得
                     int l=0;
@@ -106,10 +103,7 @@ namespace asshuku {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
                         for(int x=0;x<p_img.Width-1;x++) {
                             int offset=yyyoffset+p_img.NChannels*x;
-                            if(p[offset]<threshold) if((p[(offset-p_img.WidthStep)]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[(offset+p_img.NChannels)-p_img.WidthStep]<threshold)) {
-                                    l=yy-1;
-                                    break;
-                                }
+                            if(p[offset]<threshold) if((p[(offset-p_img.WidthStep)]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[(offset+p_img.NChannels)-p_img.WidthStep]<threshold)) {l=yy-1;break;}
                         }
                     }if(l==-5) {mi=y;break;}
                     else y+=l;
@@ -120,10 +114,7 @@ namespace asshuku {
                         int xxxoffset=p_img.NChannels*(x+xx);
                         for(int y=hi;y<mi-1;y++) {
                             int offset=p_img.WidthStep*y+xxxoffset;
-                            if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) {
-                                    l=xx+1;
-                                    break;
-                                }
+                            if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) {l=xx+1;break;}
                         }
                     }if(l==5) { fu=x;break; }
                     else x+=l;
@@ -154,14 +145,12 @@ namespace asshuku {
                             int yyyoffset = (p_img.WidthStep*(y+yy));
                             for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+p_img.NChannels*x]<threshold)++l[yy];
                         }
-                        if((p_img.Width!=l[0])||(p_img.Width!=l[1])||(p_img.Width!=l[2])||(p_img.Width!=l[3])||(p_img.Width!=l[4])) {
-                            hi=y; y=int.MaxValue-1; break;
-                        }
+                        if((p_img.Width!=l[0])||(p_img.Width!=l[1])||(p_img.Width!=l[2])||(p_img.Width!=l[3])||(p_img.Width!=l[4])) {hi=y;break;}
                     } else {
                         int l=0;
                         int yyyoffset=(p_img.WidthStep*(y+4));
                         for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+p_img.NChannels*x]<threshold) ++l;
-                        if((p_img.Width!=l)) {hi=y; y=int.MaxValue-1; break;}
+                        if((p_img.Width!=l)) {hi=y; break;}
                     }
                 }
                 for(int y=p_img.Height-1;y>(hi+4);--y) {//Y下取得
@@ -171,14 +160,12 @@ namespace asshuku {
                             int yyyoffset=(p_img.WidthStep*(y+yy));
                             for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+p_img.NChannels*x]<threshold)++l[-yy];
                         }
-                        if((p_img.Width!=l[0])||(p_img.Width!=l[1])||(p_img.Width!=l[2])||(p_img.Width!=l[3])||(p_img.Width!=l[4])) {
-                            mi=y;y=0;break;
-                        }
+                        if((p_img.Width!=l[0])||(p_img.Width!=l[1])||(p_img.Width!=l[2])||(p_img.Width!=l[3])||(p_img.Width!=l[4])) {mi=y;break;}
                     } else {
                         int yyyoffset=(p_img.WidthStep*(y-4));
                         int l=0;
                         for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+p_img.NChannels*x]<threshold)++l;
-                        if((p_img.Width!=l)) {mi=y;y=0;break;}
+                        if((p_img.Width!=l)) {mi=y;break;}
                     }
                 }
                 for(int x=0;x<p_img.Width-1-4;x++) {//X左取得
@@ -188,14 +175,12 @@ namespace asshuku {
                             int xxxoffset=p_img.NChannels*(x+xx);
                             for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[xx];
                         }
-                        if((mi-hi)!=l[0]&&(mi-hi)!=l[1]&&(mi-hi)!=l[2]&&(mi-hi)!=l[3]&&(mi-hi)!=l[4]) {
-                            fu=x;x=int.MaxValue-1;break;
-                        }
+                        if((mi-hi)!=l[0]&&(mi-hi)!=l[1]&&(mi-hi)!=l[2]&&(mi-hi)!=l[3]&&(mi-hi)!=l[4]) {fu=x;break;}
                     } else {
                         int xxxoffset=p_img.NChannels*(x+4);
                         int l=0;
                         for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
-                        if((mi-hi)!=l) {fu=x;x=int.MaxValue-1;break;}
+                        if((mi-hi)!=l) {fu=x;break;}
                     }
                 }
                 for(int x=p_img.Width-1;x>(fu+4);--x) {//X右取得
@@ -205,14 +190,12 @@ namespace asshuku {
                             int xxxoffset=p_img.NChannels*(x+xx);
                             for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[-xx];
                         }
-                        if((mi-hi)!=l[0]&&(mi-hi)!=l[1]&&(mi-hi)!=l[2]&&(mi-hi)!=l[3]&&(mi-hi)!=l[4]) {
-                            yo=x;x=0;break;
-                        }
+                        if((mi-hi)!=l[0]&&(mi-hi)!=l[1]&&(mi-hi)!=l[2]&&(mi-hi)!=l[3]&&(mi-hi)!=l[4]) {yo=x;break;}
                     } else {
                         int xxxoffset=p_img.NChannels*(x-4);
                         int l=0;
                         for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
-                        if((mi-hi)!=l) {yo=x;x=0;break;}
+                        if((mi-hi)!=l) {yo=x;break;}
                     }
                 }
             }
@@ -253,8 +236,7 @@ namespace asshuku {
                                 q[2+qoffset]=buf[2+offset];
                             }
                         }
-                    }//Marshal.Copy(buf,0,data.Scan0,buf.Length);
-                    bmp.UnlockBits(data);
+                    }bmp.UnlockBits(data);
                 }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
@@ -269,8 +251,8 @@ namespace asshuku {
                     byte i=255;
                     for(int total=0;total<src_img.ImageSize*0.6;--i)total+=histgram[i];//0.1~0.7/p_img.NChannels
                     byte threshold=i;
-                    for(i=256-2;histgram[i+1]==0;--i);byte max=++i;
-                    for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;
+                    for(i=256-2;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(byte)がないとアスファルトでエラー
+                    for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;//(byte)がないと豆腐でエラー
                     if(max>min) {//豆腐･アスファルトはスルー
                         int hi=0,fu=0,mi=src_img.Height-1,yo=src_img.Width-1;
                         if(grayscale) {
@@ -333,11 +315,7 @@ namespace asshuku {
                     if(radioButton2.Checked==true&&MaxFile<=26*25) {//7zip under 26*25=650
                         int MaxRoot=(int)Math.Sqrt(MaxFile)+1;
                         richTextBox1.Text+="\nroot MaxRoot"+MaxRoot;
-                        /*char[] y1=new char[MaxRoot];
-                        for(int i=0;i<10&&i<y1.Length;++i)y1[i]=(char)(i+'0');//0 ~ 9
-                        for(int i=10;i<y1.Length;++i)y1[i]=(char)((i-10)+'a');//a~y
-                        for(int i=0;i<NewFileName.Length;++i)NewFileName[i]+=(y1[i/MaxRoot])+(y1[i%MaxRoot]).ToString();
-                        ///**/for(int i=0;i<NewFileName.Length;++i)NewFileName[i]=(char)((i/MaxRoot)+'a')+((char)(i%MaxRoot+'a')).ToString();//26*25  36*35mezasu
+                        for(int i=0;i<NewFileName.Length;++i)NewFileName[i]=(char)((i/MaxRoot)+'a')+((char)(i%MaxRoot+'a')).ToString();//26*25  36*35mezasu
                     } else if(MaxFile<35) {//一桁で1-y
                         for(int i=0;(i<NewFileName.Length)&&(i<10);++i)NewFileName[i]=i.ToString();//0 ~ 9
                         for(int i=10;i<NewFileName.Length;++i)NewFileName[i]=((char)((i-10)+'a')).ToString();//a~y
@@ -359,7 +337,7 @@ namespace asshuku {
                             ZipEntry entry=zip.AddFile(f);//Add a file
                             entry.FileName=new FileInfo(f).Name;
                         } 
-                        zip.Save(PathName+".zip");////Create a ZIP archive
+                        zip.Save(PathName+".zip");//Create a ZIP archive
                     } else {
                         string Extension="zip";
                         if(radioButton2.Checked==true)Extension="7z";
@@ -367,8 +345,8 @@ namespace asshuku {
                         GetShortPathName(PathName,strShortPath,1024);
                         richTextBox1.Text+="\n"+PathName+"."+Extension+"\n";
                         if(radioButton5.Checked==true)      SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
-                        else if(radioButton4.Checked==true) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* "+"-mx9",new StringBuilder(1024),1024);
-                        else if(radioButton6.Checked==true) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* "+"-mx0",new StringBuilder(1024),1024);//Create a ZIP archive
+                        else if(radioButton4.Checked==true) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
+                        else if(radioButton6.Checked==true) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
                     }
                 }
             } else MessageBox.Show("Please select folders.");
