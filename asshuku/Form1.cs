@@ -283,22 +283,22 @@ namespace asshuku {
         }
         private void DeleteSpaces(ref string f,IplImage p_img,byte threshold) {
             int[] l=new int[p_img.Height];
-            int newheight=+5+5;
+            int newheight=+1;
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
-                for(int y=5;y<p_img.Height-5;y++) {//
+                for(int y=1;y<p_img.Height;y++) {//
                     int yoffset=p_img.WidthStep*y;
                     for(int x=5;x<p_img.Width-5;x++) {
-                        int offset=yoffset+p_img.NChannels*x;
-                        if(p[offset]<threshold) { l[y]=l[y-1]+1; break; }
+                        if(p[yoffset+x]>threshold) { l[y]=l[y-1]+1;
+                        } else { l[y]=0; break; }
                     }
                 }
-                for(int y=5;y<p_img.Height-5;y++) {
+                for(int y=1;y<p_img.Height;y++) {
                     if(l[y]<=5) {
                         l[y]=0;
                         newheight++;
                     } else {
-                        l[y]=l[y]-5;
+                        l[y]=1;
                     }/**/
                 }
             }
@@ -308,10 +308,8 @@ namespace asshuku {
                     byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
                     for(int y=0;y<p_img.Height;y++) {
                         if(l[y]==0) {
-                            yy++;
-                            int yyoffset=p_img.WidthStep*yy,yoffset=p_img.WidthStep*y;
-                            for(int x=0;x<p_img.Width;x++)
-                                q[yyoffset+p_img.NChannels*x]=p[yoffset+p_img.NChannels*x];
+                            int yyoffset=p_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
+                            for(int x=0;x<p_img.Width;x++)q[yyoffset+x]=p[yoffset+x];
                         }
                     }
                 }
