@@ -281,6 +281,43 @@ namespace asshuku {
                 bmp.UnlockBits(data);
             }
         }
+        private void DeleteSpaces(ref string f,IplImage p_img,byte threshold) {
+            int[] l=new int[p_img.Height];
+            int newheight=+5+5;
+            unsafe {
+                byte* p=(byte*)p_img.ImageData;
+                for(int y=5;y<p_img.Height-5;y++) {//
+                    int yoffset=p_img.WidthStep*y;
+                    for(int x=5;x<p_img.Width-5;x++) {
+                        int offset=yoffset+p_img.NChannels*x;
+                        if(p[offset]<threshold) { l[y]=l[y-1]+1; break; }
+                    }
+                }
+                for(int y=5;y<p_img.Height-5;y++) {
+                    if(l[y]<=5) {
+                        l[y]=0;
+                        newheight++;
+                    } else {
+                        l[y]=l[y]-5;
+                    }/**/
+                }
+            }
+            using(IplImage q_img=Cv.CreateImage(new CvSize(p_img.Width,newheight),BitDepth.U8,1)) {
+                int yy=0;
+                unsafe {
+                    byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
+                    for(int y=0;y<p_img.Height;y++) {
+                        if(l[y]==0) {
+                            yy++;
+                            int yyoffset=p_img.WidthStep*yy,yoffset=p_img.WidthStep*y;
+                            for(int x=0;x<p_img.Width;x++)
+                                q[yyoffset+p_img.NChannels*x]=p[yoffset+p_img.NChannels*x];
+                        }
+                    }
+                }
+                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+            }
+        }
         private void PNGRemove(string PathName) {
             IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire all files under the path.
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();
@@ -301,9 +338,10 @@ namespace asshuku {
                             HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
                             //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                             if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
-                            using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
-                                WhiteCut(ref f,src_img,q_img,hi,fu,mi,yo,min,max-=min);
-                                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                            using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
+                                WhiteCut(ref f,src_img,p_img,hi,fu,mi,yo,min,max-=min);
+                                DeleteSpaces(ref f,p_img, threshold);
+                                //Cv.SaveImage(f,p_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
                             }
                         } else {
                             using(IplImage gry_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
@@ -311,9 +349,9 @@ namespace asshuku {
                                 HiFuMiYoWhite(gry_img,threshold,ref hi,ref fu,ref mi,ref yo);
                                 //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                                 if((hi==0)&&(fu==0)&&(mi==gry_img.Height-1)&&(yo==gry_img.Width-1))HiFuMiYoBlack(gry_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
-                                using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                                    WhiteCutColor(ref f,q_img,hi,fu,mi,yo,min);
-                                    Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                                using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
+                                    WhiteCutColor(ref f,p_img,hi,fu,mi,yo,min);
+                                    Cv.SaveImage(f,p_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
                                 }
                             }
                         }
