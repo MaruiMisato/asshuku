@@ -296,11 +296,11 @@ namespace asshuku {
                     }
                 }
                 for(int y=1;y<p_img.Height;y++) {
-                    if(ly[y]<=5) {
+                    if(ly[y]<=p_img.Height*0.07) {
                         ly[y]=0;
                         newheight++;
                     } else {
-                        ly[y]=1;
+                        //ly[y]=1;
                     }/**/
                 }
                 using(IplImage q_img=Cv.CreateImage(new CvSize(p_img.Width,newheight),BitDepth.U8,1)) {
@@ -313,18 +313,17 @@ namespace asshuku {
                         }
                     }
                     for(int x=1;x<q_img.Width;x++) {//
-                        int xoffset=q_img.Height*x;
                         for(int y=5;y<q_img.Height-5;y++) {
-                            if(q[xoffset+x]>threshold) {lx[x]=lx[x-1]+1;
+                            if(q[q_img.WidthStep*y+x]>threshold) {lx[x]=lx[x-1]+1;
                             } else { lx[x]=0; break; }
                         }
                     }
                     for(int x=1;x<q_img.Width;x++) {
-                        if(lx[x]<=5) {
+                        if(lx[x]<=q_img.Width*0.07) {
                             lx[x]=0;
                             newwidth++;
                         } else {
-                            lx[x]=1;
+                            //lx[x]=1;
                         }/**/
                     }
                     using(IplImage r_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
@@ -332,8 +331,8 @@ namespace asshuku {
                         byte* r=(byte*)r_img.ImageData;
                         for(int x=0;x<q_img.Width;x++) {
                         if(lx[x]==0) {
-                            int xxoffset=r_img.Height*(xx++),xoffset=q_img.Height*x;
-                            for(int y=0;y<q_img.Height;y++)r[xxoffset+r_img.WidthStep*y]=q[xoffset+q_img.WidthStep*y];
+                            int xxoffset=(xx++);
+                            for(int y=0;y<q_img.Height;y++)r[xxoffset+r_img.WidthStep*y]=q[x+q_img.WidthStep*y];
                             }
                         }
                         Cv.SaveImage(f,r_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
@@ -385,7 +384,7 @@ namespace asshuku {
             richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Reset();sw.Start();
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
-            /*p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
+            p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
             p.StartInfo.WindowStyle=System.Diagnostics.ProcessWindowStyle.Hidden;//HiddenMaximizedMinimizedNormal
             Parallel.ForEach(files,new ParallelOptions(){MaxDegreeOfParallelism=4},f=>{
                 p.StartInfo.Arguments="/c pngout "+f;//By default, PNGOUT will not overwrite a PNG file if it was not able to compress it further.
