@@ -282,38 +282,63 @@ namespace asshuku {
             }
         }
         private void DeleteSpaces(ref string f,IplImage p_img,byte threshold) {
-            int[] l=new int[p_img.Height];
+            int[] ly=new int[p_img.Height];
+            int[] lx=new int[p_img.Width];
             int newheight=+1;
+            int newwidth=+1;
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
                 for(int y=1;y<p_img.Height;y++) {//
                     int yoffset=p_img.WidthStep*y;
                     for(int x=5;x<p_img.Width-5;x++) {
-                        if(p[yoffset+x]>threshold) { l[y]=l[y-1]+1;
-                        } else { l[y]=0; break; }
+                        if(p[yoffset+x]>threshold) { ly[y]=ly[y-1]+1;
+                        } else { ly[y]=0; break; }
                     }
                 }
                 for(int y=1;y<p_img.Height;y++) {
-                    if(l[y]<=5) {
-                        l[y]=0;
+                    if(ly[y]<=5) {
+                        ly[y]=0;
                         newheight++;
                     } else {
-                        l[y]=1;
+                        ly[y]=1;
                     }/**/
                 }
-            }
-            using(IplImage q_img=Cv.CreateImage(new CvSize(p_img.Width,newheight),BitDepth.U8,1)) {
-                int yy=0;
-                unsafe {
-                    byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
+                using(IplImage q_img=Cv.CreateImage(new CvSize(p_img.Width,newheight),BitDepth.U8,1)) {
+                    int yy=0;
+                    byte* q=(byte*)q_img.ImageData;
                     for(int y=0;y<p_img.Height;y++) {
-                        if(l[y]==0) {
+                        if(ly[y]==0) {
                             int yyoffset=p_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
                             for(int x=0;x<p_img.Width;x++)q[yyoffset+x]=p[yoffset+x];
                         }
                     }
+                    for(int x=1;x<q_img.Width;x++) {//
+                        int xoffset=q_img.Height*x;
+                        for(int y=5;y<q_img.Height-5;y++) {
+                            if(q[xoffset+x]>threshold) {lx[x]=lx[x-1]+1;
+                            } else { lx[x]=0; break; }
+                        }
+                    }
+                    for(int x=1;x<q_img.Width;x++) {
+                        if(lx[x]<=5) {
+                            lx[x]=0;
+                            newwidth++;
+                        } else {
+                            lx[x]=1;
+                        }/**/
+                    }
+                    using(IplImage r_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
+                        int xx=0;
+                        byte* r=(byte*)r_img.ImageData;
+                        for(int x=0;x<q_img.Width;x++) {
+                        if(lx[x]==0) {
+                            int xxoffset=r_img.Height*(xx++),xoffset=q_img.Height*x;
+                            for(int y=0;y<q_img.Height;y++)r[xxoffset+r_img.WidthStep*y]=q[xoffset+q_img.WidthStep*y];
+                            }
+                        }
+                        Cv.SaveImage(f,r_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                    }
                 }
-                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
         private void PNGRemove(string PathName) {
