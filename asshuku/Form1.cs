@@ -201,7 +201,7 @@ namespace asshuku {
             }
         }
          
-        private void WhiteCut(ref string f,IplImage p_img,IplImage q_img,int hi,int fu,int mi,int yo,byte min,byte range) {
+        /*private void WhiteCut(ref string f,IplImage p_img,IplImage q_img,int hi,int fu,int mi,int yo,byte min,byte range) {
                 unsafe {
                     byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
                     using(System.Drawing.Image img=System.Drawing.Image.FromFile(f)) {
@@ -217,6 +217,24 @@ namespace asshuku {
                             }
                     }
                 }
+        }/**/
+        private void WhiteCut(ref string f,IplImage p_img,IplImage q_img,int hi,int fu,int mi,int yo) {
+            unsafe {
+                byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
+                using(System.Drawing.Image img=System.Drawing.Image.FromFile(f)) {
+                    if(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat)<8) {//1pixel当たり4,2,1bitの明らかに最適化済みの画像は，階調値変換が不要
+                        for(int y=hi;y<=mi;++y) {
+                            int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
+                            for(int x=fu;x<=yo;++x)
+                                q[qyoffset+(x-fu)]=p[yoffset+x];
+                        }
+                    } else
+                        for(int y=hi;y<=mi;++y) {
+                            int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
+                            for(int x=fu;x<=yo;++x)q[qyoffset+(x-fu)]=p[yoffset+p_img.NChannels*x];//255.99ないと255が254になる
+                        }
+                }
+            }
         }
         /*private void WhiteCut(ref string f,IplImage p_img,int hi,int fu,int mi,int yo,byte min,byte range) {
             using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
@@ -281,7 +299,7 @@ namespace asshuku {
                 bmp.UnlockBits(data);
             }
         }
-        private void DeleteSpaces(ref string f,IplImage p_img,byte threshold) {//内部の空白を除去 グレイスケールのみ
+        private void DeleteSpaces(ref string f,IplImage p_img,byte threshold,byte min,byte range) {//内部の空白を除去 グレイスケールのみ
             int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
             int newheight=+1,newwidth=+1;
             unsafe {
@@ -313,7 +331,7 @@ namespace asshuku {
                         if(ly[y]==0) {
                             int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
                             int xx=0;
-                            for(int x=0;x<p_img.Width;x++)if(lx[x]==0)q[yyoffset+(xx++)]=p[yoffset+x];
+                            for(int x=0;x<p_img.Width;x++) if(lx[x]==0)q[yyoffset+(xx++)]=(byte)((255.99/range)*(p[yoffset+x]-min));//255.99ないと255が254になる
                         }
                     Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
                 }
@@ -340,8 +358,8 @@ namespace asshuku {
                             //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                             if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
-                                WhiteCut(ref f,src_img,p_img,hi,fu,mi,yo,min,max-=min);
-                                DeleteSpaces(ref f,p_img,threshold);//内部の空白を除去
+                                WhiteCut(ref f,src_img,p_img,hi,fu,mi,yo);
+                                DeleteSpaces(ref f,p_img,threshold,min,max-=min);//内部の空白を除去
                             }
                         } else {
                             using(IplImage gry_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
@@ -362,7 +380,7 @@ namespace asshuku {
             richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Reset();sw.Start();
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
-            /*p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
+            p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
             p.StartInfo.WindowStyle=System.Diagnostics.ProcessWindowStyle.Hidden;//HiddenMaximizedMinimizedNormal
             Parallel.ForEach(files,new ParallelOptions(){MaxDegreeOfParallelism=4},f=>{
                 p.StartInfo.Arguments="/c pngout "+f;//By default, PNGOUT will not overwrite a PNG file if it was not able to compress it further.
