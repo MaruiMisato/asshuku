@@ -281,53 +281,41 @@ namespace asshuku {
                 bmp.UnlockBits(data);
             }
         }
-        private void DeleteSpaces(ref string f,IplImage p_img,byte threshold) {
+        private void DeleteSpaces(ref string f,IplImage p_img,byte threshold) {//内部の空白を除去 グレイスケールのみ
             int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
             int newheight=+1,newwidth=+1;
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
-                for(int y=1;y<p_img.Height;y++) {//
+                for(int y=1;y<p_img.Height;y++) {
                     int yoffset=p_img.WidthStep*y;
-                    for(int x=0;x<p_img.Width;x++) {
-                        if(p[yoffset+x]>threshold) { ly[y]=ly[y-1]+1;
-                        } else { ly[y]=0; break; }
-                    }
+                    for(int x=0;x<p_img.Width;x++) 
+                        if(p[yoffset+x]>threshold) ly[y]=ly[y-1]+1;
+                        else { ly[y]=0; break; }
                 }
                 for(int y=1;y<p_img.Height;y++) 
                     if(ly[y]<=p_img.Height*0.05) {
                         ly[y]=0;
                         newheight++;
-                    } 
-                using(IplImage q_img=Cv.CreateImage(new CvSize(p_img.Width,newheight),BitDepth.U8,1)) {
+                    }
+                for(int x=1;x<p_img.Width;x++) 
+                    for(int y=0;y<p_img.Height;y++) 
+                        if(p[p_img.WidthStep*y+x]>threshold) lx[x]=lx[x-1]+1;
+                        else { lx[x]=0; break; }
+                for(int x=1;x<p_img.Width;x++)
+                    if(lx[x]<=p_img.Width*0.05) {
+                        lx[x]=0;
+                        newwidth++;
+                    }
+                using(IplImage q_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
                     int yy=0;
                     byte* q=(byte*)q_img.ImageData;
-                    for(int y=0;y<p_img.Height;y++) {
+                    for(int y=0;y<p_img.Height;y++) 
                         if(ly[y]==0) {
-                            int yyoffset=p_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
-                            for(int x=0;x<p_img.Width;x++)q[yyoffset+x]=p[yoffset+x];
+                            int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
+                            int xx=0;
+                            for(int x=0;x<p_img.Width;x++)if(lx[x]==0)q[yyoffset+(xx++)]=p[yoffset+x];
                         }
-                    }
-                    for(int x=1;x<q_img.Width;x++) {//
-                        for(int y=0;y<q_img.Height;y++) {
-                            if(q[q_img.WidthStep*y+x]>threshold) {lx[x]=lx[x-1]+1;
-                            } else { lx[x]=0; break; }
-                        }
-                    }
-                    for(int x=1;x<q_img.Width;x++) 
-                        if(lx[x]<=q_img.Width*0.05) {
-                            lx[x]=0;
-                            newwidth++;
-                        } 
-                    using(IplImage r_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
-                        int xx=0;
-                        byte* r=(byte*)r_img.ImageData;
-                        for(int x=0;x<q_img.Width;x++) {
-                        if(lx[x]==0) {
-                            int xxoffset=(xx++);
-                            for(int y=0;y<q_img.Height;y++)r[xxoffset+r_img.WidthStep*y]=q[x+q_img.WidthStep*y];
-                            }
-                        }Cv.SaveImage(f,r_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
-                    }
+                    Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
                 }
             }
         }
@@ -353,8 +341,7 @@ namespace asshuku {
                             if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
                                 WhiteCut(ref f,src_img,p_img,hi,fu,mi,yo,min,max-=min);
-                                DeleteSpaces(ref f,p_img, threshold);
-                                //Cv.SaveImage(f,p_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                                DeleteSpaces(ref f,p_img,threshold);//内部の空白を除去
                             }
                         } else {
                             using(IplImage gry_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
