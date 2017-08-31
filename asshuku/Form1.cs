@@ -282,27 +282,22 @@ namespace asshuku {
             }
         }
         private void DeleteSpaces(ref string f,IplImage p_img,byte threshold) {
-            int[] ly=new int[p_img.Height];
-            int[] lx=new int[p_img.Width];
-            int newheight=+1;
-            int newwidth=+1;
+            int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
+            int newheight=+1,newwidth=+1;
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
                 for(int y=1;y<p_img.Height;y++) {//
                     int yoffset=p_img.WidthStep*y;
-                    for(int x=5;x<p_img.Width-5;x++) {
+                    for(int x=0;x<p_img.Width;x++) {
                         if(p[yoffset+x]>threshold) { ly[y]=ly[y-1]+1;
                         } else { ly[y]=0; break; }
                     }
                 }
-                for(int y=1;y<p_img.Height;y++) {
-                    if(ly[y]<=p_img.Height*0.07) {
+                for(int y=1;y<p_img.Height;y++) 
+                    if(ly[y]<=p_img.Height*0.05) {
                         ly[y]=0;
                         newheight++;
-                    } else {
-                        //ly[y]=1;
-                    }/**/
-                }
+                    } 
                 using(IplImage q_img=Cv.CreateImage(new CvSize(p_img.Width,newheight),BitDepth.U8,1)) {
                     int yy=0;
                     byte* q=(byte*)q_img.ImageData;
@@ -313,19 +308,16 @@ namespace asshuku {
                         }
                     }
                     for(int x=1;x<q_img.Width;x++) {//
-                        for(int y=5;y<q_img.Height-5;y++) {
+                        for(int y=0;y<q_img.Height;y++) {
                             if(q[q_img.WidthStep*y+x]>threshold) {lx[x]=lx[x-1]+1;
                             } else { lx[x]=0; break; }
                         }
                     }
-                    for(int x=1;x<q_img.Width;x++) {
-                        if(lx[x]<=q_img.Width*0.07) {
+                    for(int x=1;x<q_img.Width;x++) 
+                        if(lx[x]<=q_img.Width*0.05) {
                             lx[x]=0;
                             newwidth++;
-                        } else {
-                            //lx[x]=1;
-                        }/**/
-                    }
+                        } 
                     using(IplImage r_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
                         int xx=0;
                         byte* r=(byte*)r_img.ImageData;
@@ -334,8 +326,7 @@ namespace asshuku {
                             int xxoffset=(xx++);
                             for(int y=0;y<q_img.Height;y++)r[xxoffset+r_img.WidthStep*y]=q[x+q_img.WidthStep*y];
                             }
-                        }
-                        Cv.SaveImage(f,r_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                        }Cv.SaveImage(f,r_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
                     }
                 }
             }
@@ -384,7 +375,7 @@ namespace asshuku {
             richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Reset();sw.Start();
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
-            p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
+            /*p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
             p.StartInfo.WindowStyle=System.Diagnostics.ProcessWindowStyle.Hidden;//HiddenMaximizedMinimizedNormal
             Parallel.ForEach(files,new ParallelOptions(){MaxDegreeOfParallelism=4},f=>{
                 p.StartInfo.Arguments="/c pngout "+f;//By default, PNGOUT will not overwrite a PNG file if it was not able to compress it further.
