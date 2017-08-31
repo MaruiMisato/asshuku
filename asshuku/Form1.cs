@@ -200,8 +200,8 @@ namespace asshuku {
                 }
             }
         }
-        private void WhiteCut(ref string f,IplImage p_img,int hi,int fu,int mi,int yo,byte min,byte range) {
-            using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
+         
+        private void WhiteCut(ref string f,IplImage p_img,IplImage q_img,int hi,int fu,int mi,int yo,byte min,byte range) {
                 unsafe {
                     byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
                     using(System.Drawing.Image img=System.Drawing.Image.FromFile(f)) {
@@ -216,9 +216,30 @@ namespace asshuku {
                                 for(int x=fu;x<=yo;++x)q[qyoffset+(x-fu)]=(byte)((255.99/range)*(p[yoffset+p_img.NChannels*x]-min));//255.99ないと255が254になる
                             }
                     }
-                }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
-            }
+                }
         }
+        /*private void WhiteCut(ref string f,IplImage p_img,int hi,int fu,int mi,int yo,byte min,byte range) {
+            using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
+                unsafe {
+                    byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
+                    using(System.Drawing.Image img=System.Drawing.Image.FromFile(f)) {
+                        if(System.Drawing.Image.GetPixelFormatSize(img.PixelFormat)<8) {//1pixel当たり4,2,1bitの明らかに最適化済みの画像は，階調値変換が不要
+                            for(int y=hi;y<=mi;++y) {
+                                int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
+                                for(int x=fu;x<=yo;++x)
+                                    q[qyoffset+(x-fu)]=p[yoffset+p_img.NChannels*x];
+                            }
+                        } else
+                            for(int y=hi;y<=mi;++y) {
+                                int yoffset=(p_img.WidthStep*y),qyoffset=(q_img.WidthStep*(y-hi));
+                                for(int x=fu;x<=yo;++x)
+                                    q[qyoffset+(x-fu)]=(byte)((255.99/range)*(p[yoffset+p_img.NChannels*x]-min));//255.99ないと255が254になる
+                            }
+                    }
+                }
+                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+            }
+        }       
         private void WhiteCutColor(ref string f,int hi,int fu,int mi,int yo,byte min) {//階調値線形変換は現状しない
             using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
                 using(Bitmap bmp=new Bitmap(f)) {
@@ -238,6 +259,26 @@ namespace asshuku {
                         }
                     }bmp.UnlockBits(data);
                 }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+            }
+        }/**/
+        private void WhiteCutColor(ref string f,IplImage q_img,int hi,int fu,int mi,int yo,byte min) {//階調値線形変換は現状しない
+            using(Bitmap bmp=new Bitmap(f)) {
+                BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
+                byte[] buf=new byte[bmp.Width*bmp.Height*4];
+                Marshal.Copy(data.Scan0,buf,0,buf.Length);
+                unsafe {
+                    byte* q=(byte*)q_img.ImageData;
+                    for(int y=hi;y<=mi;++y) {
+                        int yoffset=bmp.Width*4*y,qyoffset=q_img.WidthStep*(y-hi);
+                        for(int x=fu;x<=yo;++x) {
+                            int offset=yoffset+4*x,qoffset=qyoffset+3*(x-fu);
+                            q[0+qoffset]=buf[0+offset];
+                            q[1+qoffset]=buf[1+offset];
+                            q[2+qoffset]=buf[2+offset];
+                        }
+                    }
+                }
+                bmp.UnlockBits(data);
             }
         }
         private void PNGRemove(string PathName) {
@@ -260,14 +301,20 @@ namespace asshuku {
                             HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
                             //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                             if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
-                            WhiteCut(ref f,src_img,hi,fu,mi,yo,min,max-=min);
+                            using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
+                                WhiteCut(ref f,src_img,q_img,hi,fu,mi,yo,min,max-=min);
+                                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                            }
                         } else {
                             using(IplImage gry_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
                                 NoiseRemoveTwoArea(gry_img,max);
                                 HiFuMiYoWhite(gry_img,threshold,ref hi,ref fu,ref mi,ref yo);
                                 //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                                 if((hi==0)&&(fu==0)&&(mi==gry_img.Height-1)&&(yo==gry_img.Width-1))HiFuMiYoBlack(gry_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
-                                WhiteCutColor(ref f,hi,fu,mi,yo,min);
+                                using(IplImage q_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
+                                    WhiteCutColor(ref f,q_img,hi,fu,mi,yo,min);
+                                    Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                                }
                             }
                         }
                     } 
@@ -277,7 +324,7 @@ namespace asshuku {
             richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Reset();sw.Start();
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
-            p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
+            /*p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
             p.StartInfo.WindowStyle=System.Diagnostics.ProcessWindowStyle.Hidden;//HiddenMaximizedMinimizedNormal
             Parallel.ForEach(files,new ParallelOptions(){MaxDegreeOfParallelism=4},f=>{
                 p.StartInfo.Arguments="/c pngout "+f;//By default, PNGOUT will not overwrite a PNG file if it was not able to compress it further.
