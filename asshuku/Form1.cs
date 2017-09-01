@@ -321,8 +321,8 @@ namespace asshuku {
                         if(p[yoffset+x]>threshold) ly[y]=ly[y-1]+1;
                         else { ly[y]=0; break; }
                 }
-                for(int y=1;y<p_img.Height;y++) 
-                    if(ly[y]<=p_img.Height*0.05) {
+                for(int y=1;y<p_img.Height;y++)
+                    if(ly[y]<=(p_img.Height+p_img.Width)*0.02) {
                         ly[y]=0;
                         newheight++;
                     }
@@ -331,7 +331,7 @@ namespace asshuku {
                         if(p[p_img.WidthStep*y+x]>threshold) lx[x]=lx[x-1]+1;
                         else { lx[x]=0; break; }
                 for(int x=1;x<p_img.Width;x++)
-                    if(lx[x]<=p_img.Width*0.05) {
+                    if(lx[x]<=(p_img.Height+p_img.Width)*0.02) {
                         lx[x]=0;
                         newwidth++;
                     }
@@ -362,7 +362,7 @@ namespace asshuku {
                             else { ly[y]=0; break; }
                     }
                     for(int y=1;y<g_img.Height;y++)
-                        if(ly[y]<=g_img.Height*0.05) {
+                        if(ly[y]<=(g_img.Height+g_img.Width)*0.02) {
                             ly[y]=0;
                             newheight++;
                         }
@@ -371,7 +371,7 @@ namespace asshuku {
                             if(g[g_img.WidthStep*y+x]>threshold)lx[x]=lx[x-1]+1;
                             else { lx[x]=0; break; }
                     for(int x=1;x<g_img.Width;x++)
-                        if(lx[x]<=g_img.Width*0.05) {
+                        if(lx[x]<=(g_img.Height+g_img.Width)*0.02) {
                             lx[x]=0;
                             newwidth++;
                         }
@@ -488,7 +488,7 @@ namespace asshuku {
                         for(int i=100;i<NewFileName.Length;++i)NewFileName[i]+=(char)(((i-100)/36)+'a')+(y1[(i-100)%36]).ToString();
                     }
                     ReNameAlfaBeta(PathName,ref files,NewFileName);
-                    if(radioButton7.Checked==true)PNGRemove(PathName);
+                    if(radioButton7.Checked==true)PNGRemove(PathName);//PNGOptimize
                     if(radioButton3.Checked==true) {//Ionic.Zip
                         Ionic.Zip.ZipFile zip=new Ionic.Zip.ZipFile();//Create a ZIP archive
                         if(radioButton4.Checked==true)zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Level9;//max
@@ -497,8 +497,7 @@ namespace asshuku {
                         foreach(string f in files) {
                             ZipEntry entry=zip.AddFile(f);//Add a file
                             entry.FileName=new FileInfo(f).Name;
-                        } 
-                        zip.Save(PathName+".zip");//Create a ZIP archive
+                        } zip.Save(PathName+".zip");//Create a ZIP archive
                     } else {
                         string Extension="zip";
                         if(radioButton2.Checked==true)Extension="7z";
