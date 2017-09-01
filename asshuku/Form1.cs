@@ -337,6 +337,47 @@ namespace asshuku {
                 }
             }
         }
+        private void DeleteSpaces(ref string f,IplImage p_img,IplImage g_img,byte threshold,byte min,byte range) {//内部の空白を除去 グレイスケールのみ
+            int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
+            int newheight=+1,newwidth=+1;
+            unsafe {
+                byte* p=(byte*)p_img.ImageData,g=(byte*)g_img.ImageData;
+                for(int y=1;y<g_img.Height;y++) {
+                    int yoffset=g_img.WidthStep*y;
+                    for(int x=0;x<g_img.Width;x++)
+                        if(p[yoffset+x]>threshold)
+                            ly[y]=ly[y-1]+1;
+                        else { ly[y]=0; break; }
+                }
+                for(int y=1;y<g_img.Height;y++)
+                    if(ly[y]<=g_img.Height*0.05) {
+                        ly[y]=0;
+                        newheight++;
+                    }
+                for(int x=1;x<g_img.Width;x++)
+                    for(int y=0;y<g_img.Height;y++)
+                        if(p[p_img.WidthStep*y+x]>threshold)
+                            lx[x]=lx[x-1]+1;
+                        else { lx[x]=0; break; }
+                for(int x=1;x<g_img.Width;x++)
+                    if(lx[x]<=g_img.Width*0.05) {
+                        lx[x]=0;
+                        newwidth++;
+                    }
+                using(IplImage q_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
+                    int yy=0;
+                    byte* q=(byte*)q_img.ImageData;
+                    for(int y=0;y<p_img.Height;y++)
+                        if(ly[y]==0) {
+                            int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
+                            int xx=0;
+                            for(int x=0;x<p_img.Width;x++) if(lx[x]==0)
+                                    q[yyoffset+(xx++)]=(byte)((255.99/range)*(p[yoffset+x]-min));//255.99ないと255が254になる
+                        }
+                    Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                }
+            }
+        }
         private void PNGRemove(string PathName) {
             IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire all files under the path.
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();
