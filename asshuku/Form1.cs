@@ -266,8 +266,7 @@ namespace asshuku {
                             q[2+qoffset]=buf[2+offset];
                         }
                     }
-                }
-                bmp.UnlockBits(data);
+                }bmp.UnlockBits(data);
             }
         }
         private void GetSpaces(IplImage p_img,byte threshold,int[] ly,int[] lx,ref int newheight,ref int newwidth) {
@@ -275,29 +274,28 @@ namespace asshuku {
                 byte* p=(byte*)p_img.ImageData;
                 for(int y=1;y<p_img.Height;y++) {
                     int yoffset=p_img.WidthStep*y;
+                    int ybefore=ly[y-1]+1;
+                    int blackstone=0;
                     for(int x=0;x<p_img.Width;x++)
-                        if(p[yoffset+x]>threshold)ly[y]=ly[y-1]+1;
-                        else { ly[y]=0; break; }
+                        if(p[yoffset+x]>threshold)ly[y]=ybefore;//白
+                        else if(blackstone<(p_img.Width*0.01))blackstone++;
+                        else{ ly[y]=0; break; }//黒2つ以上
                 }
-                for(int y=1;y<p_img.Height;y++)
-                    if(ly[y]<=(p_img.Height+p_img.Width)*0.02) {
-                        ly[y]=0;
-                        newheight++;
-                    }
-                for(int x=1;x<p_img.Width;x++)
+                for(int y=1;y<p_img.Height;y++) if(ly[y]<=(p_img.Height+p_img.Width)*0.02) { ly[y]=0; newheight++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
+                for(int x=1;x<p_img.Width;x++) {
+                    int xbefore=lx[x-1]+1;
+                    int blackstone=0;
                     for(int y=0;y<p_img.Height;y++)
-                        if(p[p_img.WidthStep*y+x]>threshold)lx[x]=lx[x-1]+1;
-                        else { lx[x]=0; break; }
-                for(int x=1;x<p_img.Width;x++)
-                    if(lx[x]<=(p_img.Height+p_img.Width)*0.02) {
-                        lx[x]=0;
-                        newwidth++;
-                    }
+                        if(p[p_img.WidthStep*y+x]>threshold)lx[x]=xbefore;//白
+                        else if(blackstone<(p_img.Height*0.01))blackstone++;
+                        else { lx[x]=0; break; }//黒2つ以上
+                }
+                for(int x=1;x<p_img.Width;x++) if(lx[x]<=(p_img.Height+p_img.Width)*0.02) { lx[x]=0; newwidth++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
             }
         }
         private void DeleteSpaces(ref string f,IplImage p_img,byte threshold,byte min,byte range) {//内部の空白を除去 グレイスケールのみ
             int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
-            int newheight=+1,newwidth=+1;
+            int newheight=+1,newwidth=+1;//空白を切り抜いた後のサイズ
             GetSpaces(p_img,threshold,ly,lx,ref newheight,ref newwidth);
             using(IplImage q_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
                 unsafe {
