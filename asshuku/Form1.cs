@@ -83,7 +83,7 @@ namespace asshuku {
                 }
             }
         }
-        private void HiFuMiYoWhite(IplImage p_img,byte threshold,ref int hi,ref int fu,ref int mi,ref int yo) {
+        /*private void HiFuMiYoWhite(IplImage p_img,byte threshold,ref int hi,ref int fu,ref int mi,ref int yo) {
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
                 for(int y=0;y<p_img.Height-1;y++) {//Y上取得
@@ -92,10 +92,11 @@ namespace asshuku {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
                         for(int x=0;x<p_img.Width-1;x++) {
                             int offset=yyyoffset+p_img.NChannels*x;
-                            if(p[offset]<threshold)if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) {l=yy+1;break;}
+                            if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) { l=yy+1; break; }
                         }
-                    }if(l==5) {hi=y;break;} 
-                    else y+=l;
+                    }
+                    if(l==5) { hi=y; break; } else
+                        y+=l;
                 }
                 for(int y=p_img.Height-1;y>hi;--y) {//Y下取得
                     int l=0;
@@ -103,10 +104,11 @@ namespace asshuku {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
                         for(int x=0;x<p_img.Width-1;x++) {
                             int offset=yyyoffset+p_img.NChannels*x;
-                            if(p[offset]<threshold) if((p[(offset-p_img.WidthStep)]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[(offset+p_img.NChannels)-p_img.WidthStep]<threshold)) {l=yy-1;break;}
+                            if(p[offset]<threshold) if((p[(offset-p_img.WidthStep)]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[(offset+p_img.NChannels)-p_img.WidthStep]<threshold)) { l=yy-1; break; }
                         }
-                    }if(l==-5) {mi=y;break;}
-                    else y+=l;
+                    }
+                    if(l==-5) { mi=y; break; } else
+                        y+=l;
                 }
                 for(int x=0;x<p_img.Width-1;x++) {//X左取得
                     int l=0;
@@ -114,10 +116,11 @@ namespace asshuku {
                         int xxxoffset=p_img.NChannels*(x+xx);
                         for(int y=hi;y<mi-1;y++) {
                             int offset=p_img.WidthStep*y+xxxoffset;
-                            if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) {l=xx+1;break;}
+                            if(p[offset]<threshold) if((p[offset+p_img.WidthStep]<threshold)||(p[offset+p_img.NChannels]<threshold)||(p[offset+p_img.NChannels+p_img.WidthStep]<threshold)) { l=xx+1; break; }
                         }
-                    }if(l==5) { fu=x;break; }
-                    else x+=l;
+                    }
+                    if(l==5) { fu=x; break; } else
+                        x+=l;
                 }
                 for(int x=p_img.Width-1;x>fu;--x) {//X右取得
                     int l=0;
@@ -130,6 +133,44 @@ namespace asshuku {
                                     break;
                                 }
                         }
+                    }
+                    if(l==-5) { yo=x; break; } else
+                        x+=l;
+                }
+            }
+        }/**/
+        private void HiFuMiYoWhite(IplImage p_img,byte threshold,ref int hi,ref int fu,ref int mi,ref int yo) {
+            unsafe {
+                byte* p=(byte*)p_img.ImageData;
+                for(int y=0;y<p_img.Height-1;y++) {//Y上取得
+                    int l=0;
+                    for(int yy=0;((l==yy)&&(yy<5)&&(y+yy)<p_img.Height-1);++yy) {
+                        int yyyoffset=(p_img.WidthStep*(y+yy));
+                        for(int x=0;x<p_img.Width-1;x++)if(p[yyyoffset+p_img.NChannels*x]<threshold) {l=yy+1;break;}
+                    }if(l==5) {hi=y;break;} 
+                    else y+=l;
+                }
+                for(int y=p_img.Height-1;y>hi;--y) {//Y下取得
+                    int l=0;
+                    for(int yy=0;((l==yy)&&(yy>-5)&&(y+yy)>hi);--yy) {
+                        int yyyoffset=(p_img.WidthStep*(y+yy));
+                        for(int x=0;x<p_img.Width-1;x++)  if(p[yyyoffset+p_img.NChannels*x]<threshold){l=yy-1;break;}
+                    }if(l==-5) {mi=y;break;}
+                    else y+=l;
+                }
+                for(int x=0;x<p_img.Width-1;x++) {//X左取得
+                    int l=0;
+                    for(int xx=0;((l==xx)&&(xx<5)&&(x+xx)<p_img.Width-1);++xx) {
+                        int xxxoffset=p_img.NChannels*(x+xx);
+                        for(int y=hi;y<mi-1;y++)if(p[p_img.WidthStep*y+xxxoffset]<threshold) { l=xx+1; break; }
+                    }if(l==5) { fu=x;break; }
+                    else x+=l;
+                }
+                for(int x=p_img.Width-1;x>fu;--x) {//X右取得
+                    int l=0;
+                    for(int xx=0;((l==xx)&&(xx>-5)&&(x+xx)>fu);--xx) {
+                        int xxxoffset=p_img.NChannels*(x+xx);
+                        for(int y=hi;y<mi;y++)if(p[p_img.WidthStep*y+xxxoffset]<threshold){l=xx-1;break;}
                     }if(l==-5) { yo=x;break; }
                     else x+=l;
                 }
