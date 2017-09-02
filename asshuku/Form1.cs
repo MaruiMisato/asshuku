@@ -225,7 +225,8 @@ namespace asshuku {
                         if(p[yoffset+x]>threshold)ly[y]=ybefore;//白
                         else if(++blackstone>(2)){ ly[y]=0; break; }//黒2つ以上
                 }
-                for(int y=1;y<p_img.Height;++y) if(ly[y]<=(p_img.Height+p_img.Width)*0.02) { ly[y]=0; new_h++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
+                int w_width=(int)((p_img.Height+p_img.Width)*0.02);//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
+                for(int y=1;y<p_img.Height;++y) if(ly[y]<=w_width) { ly[y]=0; ++new_h; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
                 for(int x=1;x<p_img.Width;++x) {
                     int xbefore=lx[x-1]+1;
                     int blackstone=0;
@@ -233,10 +234,10 @@ namespace asshuku {
                         if(p[p_img.WidthStep*y+x]>threshold)lx[x]=xbefore;//白
                         else if(++blackstone>(2)){ lx[x]=0; break; }//黒2つ以上
                 }
-                for(int x=1;x<p_img.Width;++x) if(lx[x]<=(p_img.Height+p_img.Width)*0.02) { lx[x]=0; new_w++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
+                for(int x=1;x<p_img.Width;++x) if(lx[x]<=w_width) { lx[x]=0; ++new_w; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
             }
         }
-        private void DeleteSpaces(ref string f,IplImage p_img,byte threshold,byte min,byte range) {//内部の空白を除去 グレイスケールのみ
+        private void DeleteSpaces(ref string f,IplImage p_img,byte threshold,byte min,double magnification) {//内部の空白を除去 グレイスケールのみ
             int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
             int new_h=+1,new_w=+1;
             GetSpaces(p_img,threshold,ly,lx,ref new_h,ref new_w);
@@ -248,12 +249,12 @@ namespace asshuku {
                         if(ly[y]==0) {
                             int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
                             int xx=0;
-                            for(int x=0;x<p_img.Width;x++) if(lx[x]==0)q[yyoffset+(xx++)]=(byte)((255.99/range)*(p[yoffset+x]-min));//255.99ないと255が254になる
+                            for(int x=0;x<p_img.Width;x++) if(lx[x]==0)q[yyoffset+(xx++)]=(byte)(magnification*(p[yoffset+x]-min));//255.99ないと255が254になる
                         }
                 }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
-        private void DeleteSpacesColor(ref string f,IplImage p_img,byte threshold) {//内部の空白を除去 グレイスケールのみ
+        private void DeleteSpacesColor(ref string f,IplImage p_img,byte threshold) {//内部の空白を除去 カラー
             int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
             int new_h=+1,new_w=+1;
             using(IplImage g_img=Cv.CreateImage(new CvSize(p_img.Width,p_img.Height),BitDepth.U8,1)) {
@@ -301,12 +302,12 @@ namespace asshuku {
                         if(grayscale) 
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
                                 WhiteCut(src_img,p_img,hi,fu,mi,yo);
-                                DeleteSpaces(ref f,p_img,threshold,min,max-=min);//内部の空白を除去 階調値変換
+                                DeleteSpaces(ref f,p_img,(byte)(threshold*(255.99/(max-min))),min,255.99/(max-min));//内部の空白を除去 階調値変換
                             }
                          else 
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
                                 WhiteCutColor(ref f,p_img,hi,fu,mi,yo);
-                                DeleteSpacesColor(ref f,p_img,threshold);//内部の空白を除去
+                                DeleteSpacesColor(ref f,p_img,(byte)(threshold*(255.99/(max-min))));//内部の空白を除去
                             }
                     } 
                 }
