@@ -279,18 +279,56 @@ namespace asshuku {
                 }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
+        private void PNGRemoveF(ref string f) {
+            int[] histgram=new int[256];
+            bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
+                using(IplImage src_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
+                    byte i=255;
+                    for(int total=0;total<src_img.ImageSize*0.6;--i)total+=histgram[i];//0.1~0.7/p_img.NChannels
+                    byte threshold=i;
+                    NoiseRemoveTwoArea(src_img,255);//colorには反映されない
+                    int hi=0,fu=0,mi=src_img.Height-1,yo=src_img.Width-1;
+                    HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
+                    if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,127,ref hi,ref fu,ref mi,ref yo);//background black
+                    if(grayscale)
+                        using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
+                            WhiteCut(src_img,p_img,hi,fu,mi,yo);
+                            DeleteSpaces(ref f,p_img,threshold,0,1);//内部の空白を除去 階調値変換
+                        } else
+                        using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
+                            WhiteCutColor(ref f,p_img,hi,fu,mi,yo);
+                            DeleteSpacesColor(ref f,p_img,threshold);//内部の空白を除去
+                        }
+            }
+        }
+        private void PNGOut(IEnumerable<string> files) {
+            System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();
+            sw.Start();
+            System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
+            p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
+            p.StartInfo.WindowStyle=System.Diagnostics.ProcessWindowStyle.Hidden;//HiddenMaximizedMinimizedNormal
+            Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {
+                p.StartInfo.Arguments="/c pngout "+f;//By default, PNGOUT will not overwrite a PNG file if it was not able to compress it further.
+                p.Start();
+                p.WaitForExit();//起動
+            });
+            p.Close();
+            sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+        }
         private void PNGRemove(string PathName) {
             IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire all files under the path.
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();
             sw.Start();
-            Parallel.ForEach(files,new ParallelOptions(){MaxDegreeOfParallelism=4},f=>{//Specify the number of concurrent threads(The number of cores is reasonable).
+            Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
                 int[] histgram=new int[256];
                 bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
                 byte i=256-2;
-                for(/*i=256-2*/;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(byte)がないとアスファルトでエラー
-                for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;//(byte)がないと豆腐でエラー
+                for(/*i=256-2*/;histgram[(byte)(i+1)]==0;--i);
+                byte max=++i;//(byte)がないとアスファルトでエラー
+                for(i=1;histgram[(byte)(i-1)]==0;++i);
+                byte min=--i;//(byte)がないと豆腐でエラー
                 if(max>min) {//豆腐･アスファルトはスルー
-                    using(IplImage src_img=Cv.LoadImage(f,LoadMode.GrayScale)) { 
+                    using(IplImage src_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
                         NoiseRemoveTwoArea(src_img,max);//colorには反映されない
                         i=255;
                         for(int total=0;total<src_img.ImageSize*0.6;--i)total+=histgram[i];//0.1~0.7/p_img.NChannels
@@ -299,32 +337,24 @@ namespace asshuku {
                         HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
                         //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                         if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
-                        if(grayscale) 
+                        if(grayscale)
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
                                 WhiteCut(src_img,p_img,hi,fu,mi,yo);
                                 DeleteSpaces(ref f,p_img,(byte)(threshold*(255.99/(max-min))),min,255.99/(max-min));//内部の空白を除去 階調値変換
-                            }
-                         else 
+                            } else
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
                                 WhiteCutColor(ref f,p_img,hi,fu,mi,yo);
                                 DeleteSpacesColor(ref f,p_img,(byte)(threshold*(255.99/(max-min))));//内部の空白を除去
                             }
-                    } 
+                    }
+                    PNGRemoveF(ref  f);
+                    PNGRemoveF(ref  f);
+                    PNGRemoveF(ref  f);
+                    PNGRemoveF(ref  f);
                 }
             });
-            sw.Stop();
-            richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
-            sw.Reset();sw.Start();
-            System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
-            p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
-            p.StartInfo.WindowStyle=System.Diagnostics.ProcessWindowStyle.Hidden;//HiddenMaximizedMinimizedNormal
-            Parallel.ForEach(files,new ParallelOptions(){MaxDegreeOfParallelism=4},f=>{
-                p.StartInfo.Arguments="/c pngout "+f;//By default, PNGOUT will not overwrite a PNG file if it was not able to compress it further.
-                p.Start();p.WaitForExit();//起動
-            });
-            p.Close();/**/
-            sw.Stop();
-            richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+            sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
+            PNGOut(files);//PNGOptimize
         }
         private void button1_Click(object sender,EventArgs e) {
             if(Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data. 取得できなかったときはnull listBox1.Items.Clear();
@@ -366,7 +396,7 @@ namespace asshuku {
                         for(int i=100;i<NewFileName.Length;++i)NewFileName[i]+=(char)(((i-100)/36)+'a')+(y1[(i-100)%36]).ToString();
                     }
                     ReNameAlfaBeta(PathName,ref files,NewFileName);
-                    if(radioButton7.Checked==true)PNGRemove(PathName);//PNGOptimize
+                    if(radioButton7.Checked==true) PNGRemove(PathName);
                     if(radioButton3.Checked==true) {//Ionic.Zip
                         Ionic.Zip.ZipFile zip=new Ionic.Zip.ZipFile();//Create a ZIP archive
                         if(radioButton4.Checked==true)zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Level9;//max
