@@ -130,7 +130,7 @@ namespace asshuku {
                             int yyyoffset = (p_img.WidthStep*(y+yy));
                             for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+x]<threshold)++l[yy];
                         }
-                        if((p_img.Width!=l[0])||(p_img.Width!=l[1])||(p_img.Width!=l[2])||(p_img.Width!=l[3])||(p_img.Width!=l[4])) {hi=y;break;}
+                        if((p_img.Width!=l[0])&&(p_img.Width!=l[1])&&(p_img.Width!=l[2])&&(p_img.Width!=l[3])&&(p_img.Width!=l[4])) { hi=y; break; }
                     } else {
                         int l=0;
                         int yyyoffset=(p_img.WidthStep*(y+4));
@@ -145,7 +145,7 @@ namespace asshuku {
                             int yyyoffset=(p_img.WidthStep*(y+yy));
                             for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+x]<threshold)++l[-yy];
                         }
-                        if((p_img.Width!=l[0])||(p_img.Width!=l[1])||(p_img.Width!=l[2])||(p_img.Width!=l[3])||(p_img.Width!=l[4])) {mi=y;break;}
+                        if((p_img.Width!=l[0])&&(p_img.Width!=l[1])&&(p_img.Width!=l[2])&&(p_img.Width!=l[3])&&(p_img.Width!=l[4])) { mi=y; break; }
                     } else {
                         int yyyoffset=(p_img.WidthStep*(y-4));
                         int l=0;
@@ -160,7 +160,7 @@ namespace asshuku {
                             int xxxoffset=(x+xx);
                             for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[xx];
                         }
-                        if((mi-hi)!=l[0]&&(mi-hi)!=l[1]&&(mi-hi)!=l[2]&&(mi-hi)!=l[3]&&(mi-hi)!=l[4]) {fu=x;break;}
+                        if(((mi-hi)!=l[0])&&((mi-hi)!=l[1])&&((mi-hi)!=l[2])&&((mi-hi)!=l[3])&&((mi-hi)!=l[4])) {fu=x;break;}
                     } else {
                         int xxxoffset=(x+4);
                         int l=0;
@@ -175,7 +175,7 @@ namespace asshuku {
                             int xxxoffset=(x+xx);
                             for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[-xx];
                         }
-                        if((mi-hi)!=l[0]&&(mi-hi)!=l[1]&&(mi-hi)!=l[2]&&(mi-hi)!=l[3]&&(mi-hi)!=l[4]) {yo=x;break;}
+                        if(((mi-hi)!=l[0])&&((mi-hi)!=l[1])&&((mi-hi)!=l[2])&&((mi-hi)!=l[3])&&((mi-hi)!=l[4])) {yo=x;break;}
                     } else {
                         int xxxoffset=(x-4);
                         int l=0;
@@ -214,35 +214,35 @@ namespace asshuku {
                 bmp.UnlockBits(data);
             }
         }
-        private void GetSpaces(IplImage p_img,byte threshold,int[] ly,int[] lx,ref int newheight,ref int newwidth) {
+        private void GetSpaces(IplImage p_img,byte threshold,int[] ly,int[] lx,ref int new_h,ref int new_w) {
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
-                for(int y=1;y<p_img.Height;y++) {
+                for(int y=1;y<p_img.Height;++y) {
                     int yoffset=p_img.WidthStep*y;
                     int ybefore=ly[y-1]+1;
                     int blackstone=0;
-                    for(int x=0;x<p_img.Width;x++)
+                    for(int x=0;x<p_img.Width;++x)
                         if(p[yoffset+x]>threshold)ly[y]=ybefore;//白
-                        else if(blackstone<(2))blackstone++;
+                        else if(blackstone<(2))++blackstone;
                         else{ ly[y]=0; break; }//黒2つ以上
                 }
-                for(int y=1;y<p_img.Height;y++) if(ly[y]<=(p_img.Height+p_img.Width)*0.02) { ly[y]=0; newheight++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
-                for(int x=1;x<p_img.Width;x++) {
+                for(int y=1;y<p_img.Height;++y) if(ly[y]<=(p_img.Height+p_img.Width)*0.02) { ly[y]=0; new_h++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
+                for(int x=1;x<p_img.Width;++x) {
                     int xbefore=lx[x-1]+1;
                     int blackstone=0;
-                    for(int y=0;y<p_img.Height;y++)
+                    for(int y=0;y<p_img.Height;++y)
                         if(p[p_img.WidthStep*y+x]>threshold)lx[x]=xbefore;//白
-                        else if(blackstone<(2))blackstone++;
+                        else if(blackstone<(2))++blackstone;
                         else { lx[x]=0; break; }//黒2つ以上
                 }
-                for(int x=1;x<p_img.Width;x++) if(lx[x]<=(p_img.Height+p_img.Width)*0.02) { lx[x]=0; newwidth++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
+                for(int x=1;x<p_img.Width;++x) if(lx[x]<=(p_img.Height+p_img.Width)*0.02) { lx[x]=0; new_w++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
             }
         }
         private void DeleteSpaces(ref string f,IplImage p_img,byte threshold,byte min,byte range) {//内部の空白を除去 グレイスケールのみ
             int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
-            int newheight=+1,newwidth=+1;
-            GetSpaces(p_img,threshold,ly,lx,ref newheight,ref newwidth);
-            using(IplImage q_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,1)) {
+            int new_h=+1,new_w=+1;
+            GetSpaces(p_img,threshold,ly,lx,ref new_h,ref new_w);
+            using(IplImage q_img=Cv.CreateImage(new CvSize(new_w,new_h),BitDepth.U8,1)) {
                 unsafe {
                     int yy=0;
                     byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
@@ -252,20 +252,18 @@ namespace asshuku {
                             int xx=0;
                             for(int x=0;x<p_img.Width;x++) if(lx[x]==0)q[yyoffset+(xx++)]=(byte)((255.99/range)*(p[yoffset+x]-min));//255.99ないと255が254になる
                         }
-                }
-                Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+                }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
         private void DeleteSpacesColor(ref string f,IplImage p_img,byte threshold) {//内部の空白を除去 グレイスケールのみ
             int[] ly=new int[p_img.Height],lx=new int[p_img.Width];
-            int newheight=+1,newwidth=+1;
-            unsafe {
-                using(IplImage g_img=Cv.CreateImage(new CvSize(p_img.Width,p_img.Height),BitDepth.U8,1)) {
-                    byte* g=(byte*)g_img.ImageData,p=(byte*)p_img.ImageData;
-                    for(int y=0;y<p_img.ImageSize;y+=3)g[y/3]=(byte)((p[y+0]+p[y+1]+p[y+2])/3);
-                    GetSpaces(g_img,threshold,ly,lx,ref newheight,ref newwidth);
-                }
-                using(IplImage q_img=Cv.CreateImage(new CvSize(newwidth,newheight),BitDepth.U8,3)) {
+            int new_h=+1,new_w=+1;
+            using(IplImage g_img=Cv.CreateImage(new CvSize(p_img.Width,p_img.Height),BitDepth.U8,1)) {
+                Cv.CvtColor(p_img,g_img,ColorConversion.BgrToGray);
+                GetSpaces(g_img,threshold,ly,lx,ref new_h,ref new_w);
+            }
+            using(IplImage q_img=Cv.CreateImage(new CvSize(new_w,new_h),BitDepth.U8,3)) {
+                unsafe {
                     int yy=0;
                     byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
                     for(int y=0;y<p_img.Height;y++)
@@ -279,8 +277,7 @@ namespace asshuku {
                                     q[qoffset+2]=p[offset+2];
                                 }
                         }
-                    Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
-                }
+                }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
         private void PNGRemove(string PathName) {
@@ -295,25 +292,24 @@ namespace asshuku {
                 for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;//(byte)がないと豆腐でエラー
                 if(max>min) {//豆腐･アスファルトはスルー
                     using(IplImage src_img=Cv.LoadImage(f,LoadMode.GrayScale)) { 
-                        int hi=0,fu=0,mi=src_img.Height-1,yo=src_img.Width-1;
-                        NoiseRemoveTwoArea(src_img,max);
+                        NoiseRemoveTwoArea(src_img,max);//colorには反映されない
                         i=255;
                         for(int total=0;total<src_img.ImageSize*0.6;--i)total+=histgram[i];//0.1~0.7/p_img.NChannels
                         byte threshold=i;
+                        int hi=0,fu=0,mi=src_img.Height-1,yo=src_img.Width-1;
                         HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
                         //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
                         if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
-                        if(grayscale) {
+                        if(grayscale) 
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
                                 WhiteCut(src_img,p_img,hi,fu,mi,yo);
-                                DeleteSpaces(ref f,p_img,threshold,min,max-=min);//内部の空白を除去
+                                DeleteSpaces(ref f,p_img,threshold,min,max-=min);//内部の空白を除去 階調値変換
                             }
-                        } else {
+                         else 
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
                                 WhiteCutColor(ref f,p_img,hi,fu,mi,yo);
-                                DeleteSpacesColor(ref f,p_img,threshold);
+                                DeleteSpacesColor(ref f,p_img,threshold);//内部の空白を除去
                             }
-                        }
                     } 
                 }
             });
