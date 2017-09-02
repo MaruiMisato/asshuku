@@ -347,10 +347,8 @@ namespace asshuku {
                                 DeleteSpacesColor(ref f,p_img,(byte)(threshold*(255.99/(max-min))));//内部の空白を除去
                             }
                     }
-                    PNGRemoveF(ref  f);
-                    PNGRemoveF(ref  f);
-                    PNGRemoveF(ref  f);
-                    PNGRemoveF(ref  f);
+                    PNGRemoveF(ref f);PNGRemoveF(ref f);PNGRemoveF(ref f);PNGRemoveF(ref f);PNGRemoveF(ref f);
+                    PNGRemoveF(ref f);PNGRemoveF(ref f);PNGRemoveF(ref f);PNGRemoveF(ref f);PNGRemoveF(ref f);
                 }
             });
             sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
