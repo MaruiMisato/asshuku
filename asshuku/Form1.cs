@@ -223,8 +223,7 @@ namespace asshuku {
                     int blackstone=0;
                     for(int x=0;x<p_img.Width;++x)
                         if(p[yoffset+x]>threshold)ly[y]=ybefore;//白
-                        else if(blackstone<(2))++blackstone;
-                        else{ ly[y]=0; break; }//黒2つ以上
+                        else if(++blackstone>(2)){ ly[y]=0; break; }//黒2つ以上
                 }
                 for(int y=1;y<p_img.Height;++y) if(ly[y]<=(p_img.Height+p_img.Width)*0.02) { ly[y]=0; new_h++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
                 for(int x=1;x<p_img.Width;++x) {
@@ -232,8 +231,7 @@ namespace asshuku {
                     int blackstone=0;
                     for(int y=0;y<p_img.Height;++y)
                         if(p[p_img.WidthStep*y+x]>threshold)lx[x]=xbefore;//白
-                        else if(blackstone<(2))++blackstone;
-                        else { lx[x]=0; break; }//黒2つ以上
+                        else if(++blackstone>(2)){ lx[x]=0; break; }//黒2つ以上
                 }
                 for(int x=1;x<p_img.Width;++x) if(lx[x]<=(p_img.Height+p_img.Width)*0.02) { lx[x]=0; new_w++; }//(p_img.Height+p_img.Width)*0.02)は残す空白の大きさ
             }
