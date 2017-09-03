@@ -194,20 +194,26 @@ namespace asshuku {
                 }
             }
         }
-        private void WhiteCutColor(ref string f,IplImage q_img,int hi,int fu,int mi,int yo) {//階調値線形変換は現状しない
+        private void WhiteCutColor(ref string f,IplImage g_img,IplImage q_img,int hi,int fu,int mi,int yo,byte max) {//階調値線形変換はしない 
             using(Bitmap bmp=new Bitmap(f)) {
                 BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
                 byte[] buf=new byte[bmp.Width*bmp.Height*4];
                 Marshal.Copy(data.Scan0,buf,0,buf.Length);
                 unsafe {
-                    byte* q=(byte*)q_img.ImageData;
+                    byte* q=(byte*)q_img.ImageData,g=(byte*)g_img.ImageData;
                     for(int y=hi;y<=mi;++y) {
-                        int yoffset=bmp.Width*4*y,qyoffset=q_img.WidthStep*(y-hi);
+                        int yoffset=bmp.Width*4*y,qyoffset=q_img.WidthStep*(y-hi),gyoffset=g_img.WidthStep*(y);
                         for(int x=fu;x<=yo;++x) {
-                            int offset=yoffset+4*x,qoffset=qyoffset+3*(x-fu);
-                            q[0+qoffset]=buf[0+offset];
-                            q[1+qoffset]=buf[1+offset];
-                            q[2+qoffset]=buf[2+offset];
+                            int offset=yoffset+4*x,qoffset=qyoffset+3*(x-fu),goffset=gyoffset+(x);
+                            if(g[gyoffset+(x)]==max) {//NoiseRemoveTwoAreaノイズ除去を反映させる
+                                q[0+qoffset]=max;
+                                q[1+qoffset]=max;
+                                q[2+qoffset]=max;
+                            } else {
+                                q[0+qoffset]=buf[0+offset];
+                                q[1+qoffset]=buf[1+offset];
+                                q[2+qoffset]=buf[2+offset];
+                            }
                         }
                     }
                 }
@@ -279,47 +285,26 @@ namespace asshuku {
                 }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
         }
-        /*private void PNGRemoveF(ref string f) {
-            int[] histgram=new int[256];
-            bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
-            using(IplImage src_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
-                byte i=255;
-                for(int total=0;(total+=histgram[i])<src_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
-                NoiseRemoveTwoArea(src_img,255);//colorには反映されない
-                int hi=0,fu=0,mi=src_img.Height-1,yo=src_img.Width-1;
-                HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
-                if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,127,ref hi,ref fu,ref mi,ref yo);//background black
-                if(grayscale)
-                    using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
-                        WhiteCut(src_img,p_img,hi,fu,mi,yo);
-                        DeleteSpaces(ref f,p_img,threshold,0,1);//内部の空白を除去 階調値変換
-                    } 
-                else
-                    using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                        WhiteCutColor(ref f,p_img,hi,fu,mi,yo);
-                        DeleteSpacesColor(ref f,p_img,threshold);//内部の空白を除去
-                    }
-            }
-        }/**/
         private void PNGRemoveAlways(ref string f,uint n) {
             while(0!=n--) { 
                 int[] histgram=new int[256];
                 bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
-                using(IplImage src_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
+                using(IplImage g_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
                     byte i=255;
-                    for(int total=0;(total+=histgram[i])<src_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
-                    NoiseRemoveTwoArea(src_img,255);//colorには反映されない
-                    int hi=0,fu=0,mi=src_img.Height-1,yo=src_img.Width-1;
-                    HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
-                    if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,127,ref hi,ref fu,ref mi,ref yo);//background black
+                    for(int total=0;(total+=histgram[i])<g_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
+                    NoiseRemoveTwoArea(g_img,255);//colorには後ほど反映させる
+                    int hi=0,fu=0,mi=g_img.Height-1,yo=g_img.Width-1;
+                    HiFuMiYoWhite(g_img,threshold,ref hi,ref fu,ref mi,ref yo);
+                    if((hi==0)&&(fu==0)&&(mi==g_img.Height-1)&&(yo==g_img.Width-1))HiFuMiYoBlack(g_img,127,ref hi,ref fu,ref mi,ref yo);//background black
                     if(grayscale)
                         using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
-                            WhiteCut(src_img,p_img,hi,fu,mi,yo);
+                            WhiteCut(g_img,p_img,hi,fu,mi,yo);
                             DeleteSpaces(ref f,p_img,threshold,0,1);//内部の空白を除去 階調値変換
                         } 
                     else
                         using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                            WhiteCutColor(ref f,p_img,hi,fu,mi,yo);
+                            for(i=256-2;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(byte)がないとアスファルトでエラー
+                            WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max);
                             DeleteSpacesColor(ref f,p_img,threshold);//内部の空白を除去
                         }
                 }
@@ -346,21 +331,21 @@ namespace asshuku {
                 for(/*i=256-2*/;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(byte)がないとアスファルトでエラー
                 for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;//(byte)がないと豆腐でエラー
                 if(max>min) {//豆腐･アスファルトはスルー
-                    using(IplImage src_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
-                        NoiseRemoveTwoArea(src_img,max);//colorには反映されない
+                    using(IplImage g_img=Cv.LoadImage(f,LoadMode.GrayScale)) {//gray
+                        NoiseRemoveTwoArea(g_img,max);//colorには後ほど反映させる
                         i=255;
-                        for(int total=0;(total+=histgram[i])<src_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
-                        int hi=0,fu=0,mi=src_img.Height-1,yo=src_img.Width-1;
-                        HiFuMiYoWhite(src_img,threshold,ref hi,ref fu,ref mi,ref yo);
+                        for(int total=0;(total+=histgram[i])<g_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
+                        int hi=0,fu=0,mi=g_img.Height-1,yo=g_img.Width-1;
+                        HiFuMiYoWhite(g_img,threshold,ref hi,ref fu,ref mi,ref yo);
                         //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
-                        if((hi==0)&&(fu==0)&&(mi==src_img.Height-1)&&(yo==src_img.Width-1))HiFuMiYoBlack(src_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
+                        if((hi==0)&&(fu==0)&&(mi==g_img.Height-1)&&(yo==g_img.Width-1))HiFuMiYoBlack(g_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
                         if(grayscale)
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
-                                WhiteCut(src_img,p_img,hi,fu,mi,yo);
+                                WhiteCut(g_img,p_img,hi,fu,mi,yo);
                                 DeleteSpaces(ref f,p_img,(byte)(threshold*(255.99/(max-min))),min,255.99/(max-min));//内部の空白を除去 階調値変換
                             } else
                             using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                                WhiteCutColor(ref f,p_img,hi,fu,mi,yo);
+                                WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max);
                                 DeleteSpacesColor(ref f,p_img,(byte)(threshold*(255.99/(max-min))));//内部の空白を除去
                             }
                     }
