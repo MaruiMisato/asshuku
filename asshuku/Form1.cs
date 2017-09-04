@@ -43,7 +43,7 @@ namespace asshuku {
                         histgram[(buf[i]+buf[i+1]+buf[i+2])/3]++;
                     }
                     else histgram[buf[i]]++;
-                }//Marshal.Copy(buf,0,data.Scan0,buf.Length);
+                }
                 bmp.UnlockBits(data);
             }
             return grayscale;
@@ -53,18 +53,18 @@ namespace asshuku {
                 unsafe {
                     byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
                     for(int y=0;y<q_img.ImageSize;++y)q[y]=p[y]<max?(byte)0:(byte)255;//First, binarize
-                    for(int y=1;y<q_img.Height-1;y++) {
+                    for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
-                        for(int x=1;x<q_img.Width-1;x++)
+                        for(int x=1;x<q_img.Width-1;++x)
                             if(q[yoffset+x]==0)//Count white spots around black dots
                                 for(int yy=-1;yy<2;++yy) {
                                     int yyyoffset=q_img.WidthStep*(y+yy);
                                     for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==255) ++q[yoffset+x];
                                 }
                     }
-                    for(int y=1;y<q_img.Height-1;y++) {
+                    for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
-                        for(int x=1;x<q_img.Width-1;x++) {
+                        for(int x=1;x<q_img.Width-1;++x) {
                             if(q[yoffset+x]==7)//When there are seven white spots in the periphery
                                 for(int yy=-1;yy<2;++yy) {
                                     int yyyoffset = q_img.WidthStep*(y+yy);
@@ -86,11 +86,11 @@ namespace asshuku {
         private void HiFuMiYoWhite(IplImage p_img,byte threshold,ref int hi,ref int fu,ref int mi,ref int yo) {
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
-                for(int y=0;y<p_img.Height-1;y++) {//Y上取得
+                for(int y=0;y<p_img.Height-1;++y) {//Y上取得
                     int l=0;
                     for(int yy=0;((l==yy)&&(yy<5)&&(y+yy)<p_img.Height-1);++yy) {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
-                        for(int x=0;x<p_img.Width-1;x++) if(p[yyyoffset+x]<threshold) { l=yy+1; break; }
+                        for(int x=0;x<p_img.Width-1;++x) if(p[yyyoffset+x]<threshold) { l=yy+1; break; }
                     }if(l==5) {hi=y;break;} 
                     else y+=l;
                 }
@@ -98,7 +98,7 @@ namespace asshuku {
                     int l=0;
                     for(int yy=0;((l==yy)&&(yy>-5)&&(y+yy)>hi);--yy) {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
-                        for(int x=0;x<p_img.Width-1;x++)if(p[yyyoffset+x]<threshold) { l=yy-1; break; }
+                        for(int x=0;x<p_img.Width-1;++x) if(p[yyyoffset+x]<threshold) { l=yy-1; break; }
                     }if(l==-5) {mi=y;break;}
                     else y+=l;
                 }
@@ -286,10 +286,10 @@ namespace asshuku {
             }
         }
         private void PNGRemoveAlways(ref string f,uint n) {
-            while(0!=n--) { 
-                int[] histgram=new int[256];
-                bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
+            while(0!=n--) 
                 using(IplImage g_img=Cv.LoadImage(f,LoadMode.GrayScale)) {
+                    int[] histgram=new int[256];
+                    bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
                     byte i=255;
                     for(int total=0;(total+=histgram[i])<g_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
                     NoiseRemoveTwoArea(g_img,255);//colorには後ほど反映させる
@@ -303,12 +303,11 @@ namespace asshuku {
                         } 
                     else
                         using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                            for(i=256-2;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(byte)がないとアスファルトでエラー
-                            WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max);
+                            for(i=256-2;histgram[(byte)(i+1)]==0;--i);//byte max=++i;//(NoiseRemoveTwoArea反映させる
+                            WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,++i);
                             DeleteSpacesColor(ref f,p_img,threshold);//内部の空白を除去
                         }
                 }
-            }
         }
         private void PNGOut(IEnumerable<string> files) {
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
@@ -324,34 +323,37 @@ namespace asshuku {
             IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire all files under the path.
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();
             sw.Start();
-            Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                int[] histgram=new int[256];
-                bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
-                byte i=256-2;
-                for(/*i=256-2*/;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(byte)がないとアスファルトでエラー
-                for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;//(byte)がないと豆腐でエラー
-                if(max>min) {//豆腐･アスファルトはスルー
-                    using(IplImage g_img=Cv.LoadImage(f,LoadMode.GrayScale)) {//gray
-                        NoiseRemoveTwoArea(g_img,max);//colorには後ほど反映させる
-                        i=255;
-                        for(int total=0;(total+=histgram[i])<g_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
-                        int hi=0,fu=0,mi=g_img.Height-1,yo=g_img.Width-1;
-                        HiFuMiYoWhite(g_img,threshold,ref hi,ref fu,ref mi,ref yo);
-                        //logs.Items.Add(f+":th="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo);
-                        if((hi==0)&&(fu==0)&&(mi==g_img.Height-1)&&(yo==g_img.Width-1))HiFuMiYoBlack(g_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
-                        if(grayscale)
-                            using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
-                                WhiteCut(g_img,p_img,hi,fu,mi,yo);
-                                DeleteSpaces(ref f,p_img,(byte)(threshold*(255.99/(max-min))),min,255.99/(max-min));//内部の空白を除去 階調値変換
-                            } else
-                            using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                                WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max);
-                                DeleteSpacesColor(ref f,p_img,(byte)(threshold*(255.99/(max-min))));//内部の空白を除去
-                            }
+            using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".txt",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
+                Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                    int[] histgram=new int[256];
+                    bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
+                    byte i=256-2;
+                    for(/*i=256-2*/;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(byte)がないとアスファルトでエラー
+                    for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;//(byte)がないと豆腐でエラー
+                    if(max>min) {//豆腐･アスファルトはスルー
+                        using(IplImage g_img=Cv.LoadImage(f,LoadMode.GrayScale)) {//gray
+                            NoiseRemoveTwoArea(g_img,max);//colorには後ほど反映させる
+                            i=255;
+                            for(int total=0;(total+=histgram[i])<g_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
+                            int hi=0,fu=0,mi=g_img.Height-1,yo=g_img.Width-1;
+                            HiFuMiYoWhite(g_img,threshold,ref hi,ref fu,ref mi,ref yo);
+                            if((hi==0)&&(fu==0)&&(mi==g_img.Height-1)&&(yo==g_img.Width-1))HiFuMiYoBlack(g_img,(byte)((max-min)>>1),ref hi,ref fu,ref mi,ref yo);//background black
+                            writerSync.WriteLine(f+"\n\tthreshold="+threshold+":min="+min+":max="+max+":hi="+hi+":fu="+fu+":mi="+mi+":yo="+yo+"\n\t("+g_img.Width+","+g_img.Height+")\n\t("+((yo-fu)+1)+","+((mi-hi)+1)+")");
+                            if(grayscale)
+                                using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,1)) {
+                                    WhiteCut(g_img,p_img,hi,fu,mi,yo);
+                                    DeleteSpaces(ref f,p_img,(byte)(threshold*(255.99/(max-min))),min,255.99/(max-min));//内部の空白を除去 階調値変換
+                                } else
+                                using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
+                                    WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max);
+                                    DeleteSpacesColor(ref f,p_img,(byte)(threshold*(255.99/(max-min))));//内部の空白を除去
+                                }
+                        }
+                        PNGRemoveAlways(ref f,4);//n回繰り返す
                     }
-                    PNGRemoveAlways(ref f,10);//n回繰り返す
-                }
-            });
+                });
+                writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+            }
             sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Restart();
             PNGOut(files);//PNGOptimize
