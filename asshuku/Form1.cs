@@ -88,9 +88,9 @@ namespace asshuku {
                 byte* p=(byte*)p_img.ImageData;
                 for(int y=0;y<p_img.Height;++y) {//Y上取得
                     int l=0;
-                    for(int yy=0;((l==yy)&&(yy<5)&&(y+yy)<p_img.Height-1);++yy) {
+                    for(int yy=0;((l==yy)&&(yy<5)&&(y+yy)<p_img.Height);++yy) {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
-                        for(int x=0;x<p_img.Width-1;++x) if(p[yyyoffset+x]<threshold) { l=++yy; break; }
+                        for(int x=0;x<p_img.Width-1;++x) if(p[yyyoffset+x]<threshold) { l=yy+1; break; }
                     }if(l==5) {hi=y;break;} 
                     else y+=l;
                 }
@@ -98,15 +98,15 @@ namespace asshuku {
                     int l=0;
                     for(int yy=0;((l==yy)&&(yy>-5)&&(y+yy)>hi);--yy) {
                         int yyyoffset=(p_img.WidthStep*(y+yy));
-                        for(int x=0;x<p_img.Width-1;++x) if(p[yyyoffset+x]<threshold) { l=--yy; break; }
+                        for(int x=0;x<p_img.Width-1;++x) if(p[yyyoffset+x]<threshold) { l=yy-1; break; }
                     }if(l==-5) {mi=y;break;}
                     else y+=l;
                 }
                 for(int x=0;x<p_img.Width;++x) {//X左取得
                     int l=0;
-                    for(int xx=0;((l==xx)&&(xx<5)&&(x+xx)<p_img.Width-1);++xx) {
+                    for(int xx=0;((l==xx)&&(xx<5)&&(x+xx)<p_img.Width);++xx) {
                         int xxxoffset=(x+xx);
-                        for(int y=hi;y<mi-1;++y) if(p[p_img.WidthStep*y+xxxoffset]<threshold) { l=++xx; break; }
+                        for(int y=hi;y<mi-1;++y) if(p[p_img.WidthStep*y+xxxoffset]<threshold) { l=xx+1; break; }
                     }if(l==5) { fu=x;break; }
                     else x+=l;
                 }
@@ -114,7 +114,7 @@ namespace asshuku {
                     int l=0;
                     for(int xx=0;((l==xx)&&(xx>-5)&&(x+xx)>fu);--xx) {
                         int xxxoffset=(x+xx);
-                        for(int y=hi;y<mi;++y) if(p[p_img.WidthStep*y+xxxoffset]<threshold) { l=--xx; break; }
+                        for(int y=hi;y<mi;++y) if(p[p_img.WidthStep*y+xxxoffset]<threshold) { l=xx-1; break; }
                     }if(l==-5) { yo=x;break; }
                     else x+=l;
                 }
@@ -123,18 +123,18 @@ namespace asshuku {
         private void HiFuMiYoBlack(IplImage p_img,byte threshold,ref int hi,ref int fu,ref int mi,ref int yo) {
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
-                for(int y=0;y<p_img.Height-4;++y) {//Y上取得
+                for(int y=0;y<p_img.Height-1-4;++y) {//Y上取得
                     if(y==0){
                         int[] l=new int[5];
                         for(int yy = 0;((yy<5)&&(y+yy)<p_img.Height-1);++yy) {
                             int yyyoffset = (p_img.WidthStep*(y+yy));
-                            for(int x = 0;x<p_img.Width;++x)if(p[yyyoffset+x]<threshold)++l[yy];
+                            for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+x]<threshold)++l[yy];
                         }
                         if((p_img.Width!=l[0])&&(p_img.Width!=l[1])&&(p_img.Width!=l[2])&&(p_img.Width!=l[3])&&(p_img.Width!=l[4])) { hi=y; break; }
                     } else {
                         int l=0;
                         int yyyoffset=(p_img.WidthStep*(y+4));
-                        for(int x = 0;x<p_img.Width;++x)if(p[yyyoffset+x]<threshold) ++l;
+                        for(int x = 0;x<p_img.Width;x++)if(p[yyyoffset+x]<threshold) ++l;
                         if((p_img.Width!=l)) {hi=y; break;}
                     }
                 }
@@ -143,28 +143,28 @@ namespace asshuku {
                         int[] l=new int[5];
                         for(int yy=-4;((yy<1)&&(y+yy)>hi);++yy) {
                             int yyyoffset=(p_img.WidthStep*(y+yy));
-                            for(int x=0;x<p_img.Width;++x) if(p[yyyoffset+x]<threshold)++l[-yy];
+                            for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+x]<threshold)++l[-yy];
                         }
                         if((p_img.Width!=l[0])&&(p_img.Width!=l[1])&&(p_img.Width!=l[2])&&(p_img.Width!=l[3])&&(p_img.Width!=l[4])) { mi=y; break; }
                     } else {
                         int yyyoffset=(p_img.WidthStep*(y-4));
                         int l=0;
-                        for(int x=0;x<p_img.Width;++x) if(p[yyyoffset+x]<threshold)++l;
+                        for(int x=0;x<p_img.Width;x++) if(p[yyyoffset+x]<threshold)++l;
                         if((p_img.Width!=l)) {mi=y;break;}
                     }
                 }
-                for(int x=0;x<p_img.Width-4;++x) {//X左取得
+                for(int x=0;x<p_img.Width-1-4;++x) {//X左取得
                     if(x==0) {
                         int[] l=new int[5];
                         for(int xx=0;((xx<5)&&(x+xx)<p_img.Width-1);++xx) {
                             int xxxoffset=(x+xx);
-                            for(int y=hi;y<mi;++y) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[xx];
+                            for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[xx];
                         }
                         if(((mi-hi)!=l[0])&&((mi-hi)!=l[1])&&((mi-hi)!=l[2])&&((mi-hi)!=l[3])&&((mi-hi)!=l[4])) {fu=x;break;}
                     } else {
                         int xxxoffset=(x+4);
                         int l=0;
-                        for(int y=hi;y<mi;++y) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
+                        for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
                         if((mi-hi)!=l) {fu=x;break;}
                     }
                 }
@@ -173,13 +173,13 @@ namespace asshuku {
                         int[] l=new int[5];
                         for(int xx=-4;((xx<0)&&(x+xx)>fu);++xx) {
                             int xxxoffset=(x+xx);
-                            for(int y=hi;y<mi;++y) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[-xx];
+                            for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l[-xx];
                         }
                         if(((mi-hi)!=l[0])&&((mi-hi)!=l[1])&&((mi-hi)!=l[2])&&((mi-hi)!=l[3])&&((mi-hi)!=l[4])) {yo=x;break;}
                     } else {
                         int xxxoffset=(x-4);
                         int l=0;
-                        for(int y=hi;y<mi;++y) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
+                        for(int y=hi;y<mi;y++) if(p[xxxoffset+p_img.WidthStep*y]<threshold)++l;
                         if((mi-hi)!=l) {yo=x;break;}
                     }
                 }
@@ -251,7 +251,7 @@ namespace asshuku {
                 unsafe {
                     int yy=0;
                     byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
-                    for(int y=0;y<p_img.Height;++y) 
+                    for(int y=0;y<p_img.Height;y++) 
                         if(ly[y]==0) {
                             int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
                             int xx=0;
