@@ -413,7 +413,7 @@ namespace asshuku {
                         string Extension="zip";
                         if(radioButton2.Checked==true)Extension="7z";
                         StringBuilder strShortPath=new StringBuilder(1024);
-                        GetShortPathName(PathName,strShortPath,1024);
+                        GetShortPathName(PathName,strShortPath,1024); 
                         richTextBox1.Text+="\n"+PathName+"."+Extension+"\n";
                         if(radioButton5.Checked==true)      SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
                         else if(radioButton4.Checked==true) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
