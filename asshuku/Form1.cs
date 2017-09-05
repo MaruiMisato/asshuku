@@ -229,7 +229,7 @@ namespace asshuku {
                 }
             }
         }
-        private void WhiteCutColor(ref string f,IplImage g_img,IplImage q_img,int hi,int fu,int mi,int yo,byte max) {//階調値線形変換はしない 
+        private void WhiteCutColor(ref string f,IplImage g_img,IplImage q_img,int hi,int fu,int mi,int yo,byte max,byte min) {//階調値線形変換はしない 
             using(Bitmap bmp=new Bitmap(f)) {
                 BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
                 byte[] buf=new byte[bmp.Width*bmp.Height*4];
@@ -239,12 +239,17 @@ namespace asshuku {
                     for(int y=hi;y<=mi;++y) {
                         int yoffset=bmp.Width*4*y,qyoffset=q_img.WidthStep*(y-hi),gyoffset=g_img.WidthStep*(y);
                         for(int x=fu;x<=yo;++x) {
-                            int offset=yoffset+4*x,qoffset=qyoffset+3*(x-fu),goffset=gyoffset+(x);
-                            if(g[gyoffset+(x)]==max) {//NoiseRemoveTwoAreaノイズ除去を反映させる
+                            int qoffset=qyoffset+3*(x-fu);
+                            if(g[gyoffset+x]==max) {//NoiseRemoveTwoAreaノイズ除去を反映させる
                                 q[0+qoffset]=max;
                                 q[1+qoffset]=max;
                                 q[2+qoffset]=max;
-                            } else {
+                            } else if(g[gyoffset+x]==min) {//NoiseRemoveTwoAreaノイズ除去を反映させる
+                                q[0+qoffset]=min;
+                                q[1+qoffset]=min;
+                                q[2+qoffset]=min;
+                            }else{
+                                int offset=yoffset+4*x;
                                 q[0+qoffset]=buf[0+offset];
                                 q[1+qoffset]=buf[1+offset];
                                 q[2+qoffset]=buf[2+offset];
@@ -338,8 +343,9 @@ namespace asshuku {
                         } 
                     else
                         using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                            for(i=256-2;histgram[(byte)(i+1)]==0;--i);//byte max=++i;//(NoiseRemoveTwoArea反映させる
-                            WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,++i);
+                            for(i=256-2;histgram[(byte)(i+1)]==0;--i);byte max=++i;//(NoiseRemoveTwoArea反映させる
+                            for(i=1;histgram[(byte)(i-1)]==0;++i);byte min=--i;//(byte)がないと豆腐でエラー
+                            WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max,min);
                             DeleteSpacesColor(ref f,p_img,threshold);//内部の空白を除去
                         }
                 }
@@ -381,7 +387,7 @@ namespace asshuku {
                                     DeleteSpaces(ref f,p_img,(byte)(threshold*(255.99/(max-min))),min,255.99/(max-min));//内部の空白を除去 階調値変換
                                 } else
                                 using(IplImage p_img=Cv.CreateImage(new CvSize((yo-fu)+1,(mi-hi)+1),BitDepth.U8,3)) {
-                                    WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max);
+                                    WhiteCutColor(ref f,g_img,p_img,hi,fu,mi,yo,max,min);
                                     DeleteSpacesColor(ref f,p_img,(byte)(threshold*(255.99/(max-min))));//内部の空白を除去
                                 }
                         }
