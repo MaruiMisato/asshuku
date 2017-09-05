@@ -100,7 +100,7 @@ namespace asshuku {
                     for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
                         for(int x=1;x<q_img.Width-1;++x) {
-                            /*if(q[yoffset+x]==7)//When there are seven white spots in the periphery
+                            if(q[yoffset+x]==7)//When there are seven white spots in the periphery
                                 for(int yy=-1;yy<2;++yy) {
                                     int yyyoffset = q_img.WidthStep*(y+yy);
                                     for(int xx=-1;xx<2;++xx) {
