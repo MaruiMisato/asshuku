@@ -83,7 +83,7 @@ namespace asshuku {
                 }
             }
         }
-        private void NoiseRemoveWhite(IplImage p_img,byte min) {
+        private void NoiseRemoveWhite(IplImage p_img,byte min) {//White spot will be remove
             using(IplImage q_img=Cv.CreateImage(Cv.GetSize(p_img),BitDepth.U8,1)) {
                 unsafe {
                     byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
@@ -91,7 +91,7 @@ namespace asshuku {
                     for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
                         for(int x=1;x<q_img.Width-1;++x)
-                            if(q[yoffset+x]==0)//Count white spots around black dots
+                            if(q[yoffset+x]==255)//Count white spots around black dots
                                 for(int yy=-1;yy<2;++yy) {
                                     int yyyoffset=q_img.WidthStep*(y+yy);
                                     for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==0) ++q[yoffset+x];
@@ -112,7 +112,7 @@ namespace asshuku {
                                         } else;
                                     }
                                 }
-                            else/**/ if(q[yoffset+x]==8)p[yoffset+x]=min;//Independent
+                            else if(q[yoffset+x]==8)p[yoffset+x]=min;//Independent
                         }
                     }
                 }
@@ -289,13 +289,11 @@ namespace asshuku {
             GetSpaces(p_img,threshold,ly,lx,ref new_h,ref new_w);
             using(IplImage q_img=Cv.CreateImage(new CvSize(new_w,new_h),BitDepth.U8,1)) {
                 unsafe {
-                    int yy=0;
                     byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
-                    for(int y=0;y<p_img.Height;++y) 
+                    for(int y=0,yy=0;y<p_img.Height;++y)
                         if(ly[y]==0) {
                             int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
-                            int xx=0;
-                            for(int x=0;x<p_img.Width;++x) if(lx[x]==0)q[yyoffset+(xx++)]=(byte)(magnification*(p[yoffset+x]-min));//255.99ないと255が254になる
+                            for(int x=0,xx=0;x<p_img.Width;++x) if(lx[x]==0)q[yyoffset+(xx++)]=(byte)(magnification*(p[yoffset+x]-min));//255.99ないと255が254になる
                         }
                 }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             }
@@ -309,13 +307,11 @@ namespace asshuku {
             }
             using(IplImage q_img=Cv.CreateImage(new CvSize(new_w,new_h),BitDepth.U8,3)) {
                 unsafe {
-                    int yy=0;
                     byte* q=(byte*)q_img.ImageData,p=(byte*)p_img.ImageData;
-                    for(int y=0;y<p_img.Height;++y)
+                    for(int y=0,yy=0;y<p_img.Height;++y)
                         if(ly[y]==0) {
                             int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
-                            int xx=0;
-                            for(int x=0;x<p_img.Width;++x) if(lx[x]==0) {
+                            for(int x=0,xx=0;x<p_img.Width;++x) if(lx[x]==0) {
                                     int qoffset=yyoffset+3*(xx++),offset=yoffset+3*x;
                                     q[qoffset+0]=p[offset+0];//階調値線形変換はカラーではしない
                                     q[qoffset+1]=p[offset+1];
@@ -333,6 +329,7 @@ namespace asshuku {
                     byte i=255;
                     for(int total=0;(total+=histgram[i])<g_img.ImageSize*0.6;--i);byte threshold=--i;//0.1~0.7/p_img.NChannels
                     NoiseRemoveTwoArea(g_img,255);//colorには後ほど反映させる
+                    NoiseRemoveWhite(g_img,0);
                     int hi=0,fu=0,mi=g_img.Height-1,yo=g_img.Width-1;
                     HiFuMiYoWhite(g_img,threshold,ref hi,ref fu,ref mi,ref yo);
                     if((hi==0)&&(fu==0)&&(mi==g_img.Height-1)&&(yo==g_img.Width-1))HiFuMiYoBlack(g_img,127,ref hi,ref fu,ref mi,ref yo);//background black
@@ -364,7 +361,7 @@ namespace asshuku {
             IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire all files under the path.
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();
             sw.Start();
-            using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".txt",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
+            using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
                 Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
                     int[] histgram=new int[256];
                     bool grayscale=GetHistgramR(ref f,histgram);//bool gray->true
