@@ -55,12 +55,14 @@ namespace asshuku {
                     for(int y=0;y<q_img.ImageSize;++y)q[y]=p[y]<max?(byte)0:(byte)255;//First, binarize
                     for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
-                        for(int x=1;x<q_img.Width-1;++x)
-                            if(q[yoffset+x]==0)//Count white spots around black dots
+                        for(int x=1;x<q_img.Width-1;++x) {
+                            int offset=yoffset+x;
+                            if(q[offset]==0)//Count white spots around black dots
                                 for(int yy=-1;yy<2;++yy) {
                                     int yyyoffset=q_img.WidthStep*(y+yy);
-                                    for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==255) ++q[yoffset+x];
+                                    for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==255)++q[offset];
                                 }
+                        }
                     }
                     for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
@@ -71,8 +73,8 @@ namespace asshuku {
                                     for(int xx=-1;xx<2;++xx) {
                                         int offset=yyyoffset+(x+xx);
                                         if(q[offset]==7) {//仲間 ペア
-                                            p[yoffset+x]=max;//q[yoffset+p_img.NChannels*x]=6;//Unnecessary 
-                                            p[offset]=max;q[offset]=6;
+                                            p[yoffset+x]=max;//q[offset]=0;//Unnecessary 
+                                            p[offset]=max;q[offset]=0;
                                             yy=1;break;
                                         } else;
                                     }
@@ -90,29 +92,31 @@ namespace asshuku {
                     for(int y=0;y<q_img.ImageSize;++y)q[y]=p[y]>min?(byte)255:(byte)0;//First, binarize
                     for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
-                        for(int x=1;x<q_img.Width-1;++x)
-                            if(q[yoffset+x]==255)//Count white spots around black dots
+                        for(int x=1;x<q_img.Width-1;++x) {
+                            int offset=yoffset+x;
+                            if(q[offset]==255)//Count white spots around black dots
                                 for(int yy=-1;yy<2;++yy) {
                                     int yyyoffset=q_img.WidthStep*(y+yy);
-                                    for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==0) ++q[yoffset+x];
+                                    for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==0)--q[offset];
                                 }
+                        }
                     }
                     for(int y=1;y<q_img.Height-1;++y) {
                         int yoffset=(q_img.WidthStep*y);
                         for(int x=1;x<q_img.Width-1;++x) {
-                            if(q[yoffset+x]==7)//When there are seven white spots in the periphery
+                            if(q[yoffset+x]==248)//When there are seven white spots in the periphery
                                 for(int yy=-1;yy<2;++yy) {
                                     int yyyoffset = q_img.WidthStep*(y+yy);
                                     for(int xx=-1;xx<2;++xx) {
                                         int offset=yyyoffset+(x+xx);
-                                        if(q[offset]==7) {//仲間 ペア
-                                            p[yoffset+x]=min;//q[yoffset+p_img.NChannels*x]=6;//Unnecessary 
-                                            p[offset]=min;q[offset]=6;
+                                        if(q[offset]==248) {//仲間 ペア
+                                            p[yoffset+x]=min;//q[offset]=0;//Unnecessary 
+                                            p[offset]=min;q[offset]=0;
                                             yy=1;break;
                                         } else;
                                     }
                                 }
-                            else if(q[yoffset+x]==8)p[yoffset+x]=min;//Independent
+                            else if(q[yoffset+x]==247)p[yoffset+x]=min;//Independent
                         }
                     }
                 }
@@ -395,7 +399,7 @@ namespace asshuku {
             }
             sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Restart();
-            PNGOut(files);//PNGOptimize
+            //PNGOut(files);//PNGOptimize
             sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
         }
         private void button1_Click(object sender,EventArgs e) {
