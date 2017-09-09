@@ -35,13 +35,13 @@ namespace asshuku {
             bool grayscale=true;
             using(Bitmap bmp=new Bitmap(f)) {
                 BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
-                byte[] buf=new byte[bmp.Width*bmp.Height*4];
-                Marshal.Copy(data.Scan0,buf,0,buf.Length);
-                for(int i=0;i<buf.Length;i+=4) 
-                    if(grayscale==false||buf[i]!=buf[i+1]||buf[i+2]!=buf[i]) { //Color images are not executed.
+                byte[] b=new byte[bmp.Width*bmp.Height*4];
+                Marshal.Copy(data.Scan0,b,0,b.Length);
+                for(int i=0;i<b.Length;i+=4) 
+                    if(grayscale==false||b[i]!=b[i+1]||b[i+2]!=b[i]) { //Color images are not executed.
                         grayscale=false;
-                        histgram[(int)((buf[i]+buf[i+1]+buf[i+2]+0.5)/3)]++;//四捨五入
-                    }else histgram[buf[i]]++;
+                        histgram[(int)((b[i]+b[i+1]+b[i+2]+0.5)/3)]++;//四捨五入
+                    }else histgram[b[i]]++;
                 bmp.UnlockBits(data);
             }
             return grayscale;
@@ -227,8 +227,8 @@ namespace asshuku {
         private void WhiteCutColor(ref string f,IplImage g_img,IplImage q_img,int hi,int fu,int mi,int yo,byte max,byte min) {//階調値線形変換はしない 
             using(Bitmap bmp=new Bitmap(f)) {
                 BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
-                byte[] buf=new byte[bmp.Width*bmp.Height*4];
-                Marshal.Copy(data.Scan0,buf,0,buf.Length);
+                byte[] b=new byte[bmp.Width*bmp.Height*4];
+                Marshal.Copy(data.Scan0,b,0,b.Length);
                 unsafe {
                     byte* q=(byte*)q_img.ImageData,g=(byte*)g_img.ImageData;
                     for(int y=hi;y<=mi;++y) {
@@ -236,18 +236,12 @@ namespace asshuku {
                         for(int x=fu;x<=yo;++x) {
                             int qoffset=qyoffset+3*(x-fu);
                             if(g[gyoffset+x]==max) {//NoiseRemoveTwoAreaノイズ除去を反映させる
-                                q[0+qoffset]=max;
-                                q[1+qoffset]=max;
-                                q[2+qoffset]=max;
+                                q[0+qoffset]=max;q[1+qoffset]=max;q[2+qoffset]=max;
                             } else if(g[gyoffset+x]==min) {//NoiseRemoveTwoAreaノイズ除去を反映させる
-                                q[0+qoffset]=min;
-                                q[1+qoffset]=min;
-                                q[2+qoffset]=min;
+                                q[0+qoffset]=min;q[1+qoffset]=min;q[2+qoffset]=min;
                             }else{
                                 int offset=yoffset+4*x;
-                                q[0+qoffset]=buf[0+offset];
-                                q[1+qoffset]=buf[1+offset];
-                                q[2+qoffset]=buf[2+offset];
+                                q[0+qoffset]=b[0+offset];q[1+qoffset]=b[1+offset];q[2+qoffset]=b[2+offset];
                             }
                         }
                     }
@@ -308,9 +302,7 @@ namespace asshuku {
                             int yyoffset=q_img.WidthStep*(yy++),yoffset=p_img.WidthStep*y;
                             for(int x=0,xx=0;x<p_img.Width;++x) if(lx[x]==0) {
                                     int qoffset=yyoffset+3*(xx++),offset=yoffset+3*x;
-                                    q[qoffset+0]=p[offset+0];//階調値線形変換はカラーではしない
-                                    q[qoffset+1]=p[offset+1];
-                                    q[qoffset+2]=p[offset+2];
+                                    q[qoffset+0]=p[offset+0];q[qoffset+1]=p[offset+1];q[qoffset+2]=p[offset+2];//階調値線形変換はカラーではしない
                                 }
                         }
                 }Cv.SaveImage(f,q_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
@@ -388,7 +380,7 @@ namespace asshuku {
             }
             sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Restart();
-            //PNGOut(files);//PNGOptimize
+            PNGOut(files);//PNGOptimize
             sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
         }
         private void button1_Click(object sender,EventArgs e) {
@@ -397,8 +389,8 @@ namespace asshuku {
                 foreach(string PathName in filespath) {//Enumerate acquired paths
                     logs.Items.Add(PathName);
                     richTextBox1.Text+=PathName;//Show path
-                    IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*",System.IO.SearchOption.AllDirectories);//Acquire all files under the path.
-                    string[] AllOldFileName=new string[System.IO.Directory.GetFiles(PathName,"*",SearchOption.TopDirectoryOnly).Length];//36*25+100
+                    IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*",System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
+                    string[] AllOldFileName=new string[System.IO.Directory.GetFiles(PathName,"*",SearchOption.TopDirectoryOnly).Length];//36*25+100 ファイル数 ゴミ込み
                     int MaxFile=0;
                     foreach(string f in files) {
                         FileInfo file=new FileInfo(f);
@@ -449,7 +441,7 @@ namespace asshuku {
                         richTextBox1.Text+="\n"+PathName+"."+Extension+"\n";
                         if(radioButton5.Checked==true)      SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
                         else if(radioButton4.Checked==true) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
-                        else if(radioButton6.Checked==true) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
+                        else                                SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
                     }
                 }
             } else MessageBox.Show("Please select folders.");
