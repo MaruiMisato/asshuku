@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;//正規表現
 using System.Runtime.InteropServices;
 using Ionic.Zip;
 using OpenCvSharp;
@@ -316,29 +316,42 @@ namespace asshuku {
                 foreach(string f in files) {
                     ZipEntry entry=zip.AddFile(f);//Add a file
                     entry.FileName=new FileInfo(f).Name;
-                } zip.Save(PathName+".zip");//Create a ZIP archive
+                } 
+                zip.Save(PathName+".zip");//Create a ZIP archive
+                RenameNumberOnlyFile(PathName,"zip");
             } else {
                 string Extension="zip";
                 if(radioButton2.Checked) Extension="7z";
                 StringBuilder strShortPath=new StringBuilder(1024);
-                GetShortPathName(PathName,strShortPath,1024);
-            richTextBox1.Text+="\nkkkkkkkkkkkkkkkkk41"+strShortPath;
-            richTextBox1.Text+="\nkkkkkkkkkkkkkkkkk42"+PathName;
-                
+                GetShortPathName(PathName,strShortPath,1024);                
                 richTextBox1.Text+="\n"+PathName+"."+Extension+"\n";
                 if(radioButton5.Checked) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
                 else if(radioButton4.Checked) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
                 else SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
+                RenameNumberOnlyFile(PathName,Extension);
             }
         }
-        private string CreateNewPathName(string PathName) {
+        private string GetNumberOnlyPath(string PathName) {
             string FileName = System.IO.Path.GetFileName(PathName);//Z:\[宮下英樹] センゴク権兵衛 第05巻 ->[宮下英樹] センゴク権兵衛 第05巻
             Match matchedObject = Regex.Match(FileName,"(\\d)+巻");//[宮下英樹] センゴク権兵衛 第05巻 ->05巻
-            matchedObject = Regex.Match(matchedObject.Value,"(\\d)+");//05巻->05
+            if(matchedObject.Success)
+                matchedObject = Regex.Match(matchedObject.Value,"(\\d)+");//05巻->05
+            else{
+                matchedObject=Regex.Match(FileName,"(\\d)+");//[宮下英樹] センゴク権兵衛 第05 ->05
+                if(!matchedObject.Success)
+                    return PathName;//[宮下英樹] センゴク権兵衛 第 ->
+            }
             //文字列を置換する（FileNameをmatchedObject.Valueに置換する）
-            string NewPathName = PathName.Replace(FileName,int.Parse(matchedObject.Value).ToString());//Z:\5
-            richTextBox1.Text+="\n"+NewPathName;
-            return NewPathName;
+            return PathName.Replace(FileName,int.Parse(matchedObject.Value).ToString());//Z:\5
+        }
+        private bool RenameNumberOnlyFile(string PathName,string Extension) {
+                string NewFileName=GetNumberOnlyPath(PathName)+"."+Extension;
+                if (System.IO.File.Exists(NewFileName))//重複
+                    return false;
+                FileInfo file=new FileInfo(PathName+"."+Extension);
+                file.MoveTo(NewFileName);
+                richTextBox1.Text+=NewFileName;//Show path
+                return true;
         }
         private void FileProcessing(System.Collections.Specialized.StringCollection filespath){
             foreach(string PathName in filespath) {//Enumerate acquired paths
@@ -357,9 +370,7 @@ namespace asshuku {
                 CreateNewFileName(MaxFile,NewFileName);
                 ReNameAlfaBeta(PathName,ref files,NewFileName);
                 if(radioButton7.Checked) RemovePNGMarginEntry(PathName);
-                //CreateNewPathName(PathName);
-                CreateZip(@"Z:\[宮下英樹] センゴク権兵衛 第05巻",files);
-                //CreateZip(CreateNewPathName(PathName),files);
+                CreateZip(PathName,files);
             }
         }
         private void button1_Click(object sender,EventArgs e) {
