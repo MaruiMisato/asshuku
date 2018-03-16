@@ -60,14 +60,6 @@ public class Image{
             while((ScanHalf+=Bucket[--YIndex])<Median);//Underflow
             return YIndex;
         }
-        public static bool FastestMedian(IplImage src_img,int n){
-            if((n&1)==0)return false;//偶数はさいなら
-            IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
-            FastestMedian(src_img,dst_img,n);
-            Cv.Copy(dst_img,src_img);//dst_img->src_img
-            Cv.ReleaseImage(dst_img);
-            return true;
-        }
         public static bool FastestMedian(IplImage src_img,IplImage dst_img,int n){
             if((n&1)==0)return false;//偶数はさいなら
             Cv.Copy(src_img,dst_img);
@@ -91,14 +83,7 @@ public class Image{
                 }
             return true;
         }
-        public static bool Median8(IplImage src_img){
-            if((n&1)==0)return false;//偶数はさいなら
-            IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
-            Median8(src_img,dst_img);
-            Cv.Copy(dst_img,src_img);//dst_img->src_img
-            Cv.ReleaseImage(dst_img);
-            return true;
-        }
+        
         private static void Median8(IplImage src_img,IplImage dst_img){
             Cv.Copy(src_img,dst_img);
             unsafe {
@@ -133,15 +118,7 @@ public class Image{
                 return FilterMask;
             }
         }
-        public static bool ApplyMask(int[] Mask,IplImage src_img){
-            if((n&1)==0)return false;//偶数はさいなら
-            IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
-            ApplyMask(Mask,src_img,dst_img);
-            Cv.Copy(dst_img,src_img);//dst_img->src_img
-            Cv.ReleaseImage(dst_img);
-            return true;
-        }
-        public static bool ApplyMask(int[] Mask,IplImage src_img,IplImage dst_img){//戻り値
+        public static bool ApplyMask(int[] Mask,IplImage src_img,IplImage dst_img){
             Cv.Set(dst_img,new CvScalar(0));
             bool ReturnValue = true;
             if(Mask.Length==GetConstant.Neighborhood8)

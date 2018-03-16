@@ -230,7 +230,7 @@ namespace asshuku {
             int[] FilterMask=new int[GetConstant.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
             //Debug.DisplayImage(MedianImage,nameof(MedianImage));//debug
-            //Debug.SaveImage(MedianImage,nameof(MedianImage));//debug
+            //Debug.SaveImage(LaplacianImage,nameof(LaplacianImage));//debug
             Cv.ReleaseImage(MedianImage);
             
             int[] Histgram=new int[GetConstant.Tone8Bit];
@@ -333,16 +333,16 @@ namespace asshuku {
         }
         private string GetNumberOnlyPath(string PathName) {
             string FileName = System.IO.Path.GetFileName(PathName);//Z:\[宮下英樹] センゴク権兵衛 第05巻 ->[宮下英樹] センゴク権兵衛 第05巻
-            Match matchedObject = Regex.Match(FileName,"(\\d)+巻");//[宮下英樹] センゴク権兵衛 第05巻 ->05巻
-            if(matchedObject.Success)
-                matchedObject = Regex.Match(matchedObject.Value,"(\\d)+");//05巻->05
+            Match MatchedNumber = Regex.Match(FileName,"(\\d)+巻");//[宮下英樹] センゴク権兵衛 第05巻 ->05巻
+            if(MatchedNumber.Success)
+                MatchedNumber = Regex.Match(MatchedNumber.Value,"(\\d)+");//05巻->05
             else{
-                matchedObject=Regex.Match(FileName,"(\\d)+");//[宮下英樹] センゴク権兵衛 第05 ->05
-                if(!matchedObject.Success)
+                MatchedNumber=Regex.Match(FileName,"(\\d)+");//[宮下英樹] センゴク権兵衛 第05 ->05   7zの挙動が怪しい
+                if(!MatchedNumber.Success)
                     return PathName;//[宮下英樹] センゴク権兵衛 第 ->
             }
-            //文字列を置換する（FileNameをmatchedObject.Valueに置換する）
-            return PathName.Replace(FileName,int.Parse(matchedObject.Value).ToString());//Z:\5
+            //文字列を置換する（FileNameをMatchedNumber.Valueに置換する）
+            return PathName.Replace(FileName,int.Parse(MatchedNumber.Value).ToString());//Z:\5
         }
         private bool RenameNumberOnlyFile(string PathName,string Extension) {
                 string NewFileName=GetNumberOnlyPath(PathName)+"."+Extension;
@@ -350,7 +350,7 @@ namespace asshuku {
                     return false;
                 FileInfo file=new FileInfo(PathName+"."+Extension);
                 file.MoveTo(NewFileName);
-                richTextBox1.Text+=NewFileName;//Show path
+                richTextBox1.Text+=NewFileName+"\n";//Show path
                 return true;
         }
         private void FileProcessing(System.Collections.Specialized.StringCollection filespath){
