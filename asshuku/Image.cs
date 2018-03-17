@@ -54,12 +54,19 @@ public class Image{
     }
 
     public class Filter{
-        private static byte GetBucketMedian(int[] Bucket, int Median){
+        private static byte GetBucketMedianAscendingOrder(int[] Bucket, int Median){
+            byte YIndex=0;//256 探索範囲の最小値を探す　
+            int ScanHalf=0;
+            while((ScanHalf+=Bucket[YIndex++])<Median);//Underflow
+            return --YIndex;
+        }/* */
+        private static byte GetBucketMedianDescendingOrder(int[] Bucket, int Median){
             byte YIndex=0;//256 探索範囲の最小値を探す　
             int ScanHalf=0;
             while((ScanHalf+=Bucket[--YIndex])<Median);//Underflow
             return YIndex;
         }
+        //src_img:入出力
         public static bool FastestMedian(IplImage src_img,int n){
             if((n&1)==0)return false;//偶数はさいなら
             IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
@@ -68,36 +75,50 @@ public class Image{
             Cv.ReleaseImage(dst_img);
             return true;
         }
+        public static string SelectAscendingDescendingOrder(IplImage src_img){
+            unsafe{
+                byte* src=(byte*)src_img.ImageData;
+                int Average =(int)((src[0]+src[(src_img.Height*src_img.Width)-1]+src[src_img.Width-1]+src[(src_img.Height*src_img.Width)-src_img.Width-1])>>2);
+                return Average > 127 ? "DescendingOrder":"AscendingOrder";
+            }
+        }
+        delegate byte SelectBucketMedian(int[] Bucket, int Median);
+
         public static bool FastestMedian(IplImage src_img,IplImage dst_img,int n){
             if((n&1)==0)return false;//偶数はさいなら
             Cv.Copy(src_img,dst_img);
             int MaskSize=n>>1;//
-            for(int y=MaskSize;y<src_img.Height-MaskSize;y++)
-                unsafe{                    
+            SelectBucketMedian BucketMedian;
+            if(SelectAscendingDescendingOrder(src_img)=="DescendingOrder")
+                BucketMedian=GetBucketMedianDescendingOrder;
+            else BucketMedian=GetBucketMedianAscendingOrder;
+            
+            unsafe{                    
+                byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
+                for(int y=MaskSize;y<src_img.Height-MaskSize;y++){
                     int[] Bucket=new int[GetConstant.Tone8Bit];//256tone It is cleared each time
-                    byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
                     for(int x=0;x<n;x++)
                         for(int yy=y-MaskSize;yy<=y+MaskSize;yy++)
                             Bucket[src[yy*src_img.Width+x]]++;
-                        dst[y*src_img.Width+MaskSize]=GetBucketMedian(Bucket,((n*n)>>1));
+                        dst[y*src_img.Width+MaskSize]=BucketMedian(Bucket,((n*n)>>1));
 
                     for(int x=MaskSize+1;x<src_img.Width-MaskSize;x++){
                         for(int yy=y-MaskSize;yy<=y+MaskSize;yy++){
                             Bucket[src[yy*src_img.Width+x+MaskSize-n]]--;
                             Bucket[src[yy*src_img.Width+x+MaskSize]]++;
                         }
-                        dst[y*src_img.Width+x]=GetBucketMedian(Bucket,((n*n)>>1));
+                        dst[y*src_img.Width+x]=BucketMedian(Bucket,((n*n)>>1));
                     }
                 }
+            }
             return true;
         }
-        public static bool Median8(IplImage src_img){
-            if((n&1)==0)return false;//偶数はさいなら
+        //src_img:入出力
+        public static void Median8(IplImage src_img){
             IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
             Median8(src_img,dst_img);
             Cv.Copy(dst_img,src_img);//dst_img->src_img
             Cv.ReleaseImage(dst_img);
-            return true;
         }
         private static void Median8(IplImage src_img,IplImage dst_img){
             Cv.Copy(src_img,dst_img);
@@ -133,8 +154,9 @@ public class Image{
                 return FilterMask;
             }
         }
+        //src_img:入出力
         public static bool ApplyMask(int[] Mask,IplImage src_img){
-            if((n&1)==0)return false;//偶数はさいなら
+            if((Mask.Length!=GetConstant.Neighborhood8)&&(Mask.Length!=GetConstant.Neighborhood4))return false;
             IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
             ApplyMask(Mask,src_img,dst_img);
             Cv.Copy(dst_img,src_img);//dst_img->src_img
@@ -143,7 +165,6 @@ public class Image{
         }
         public static bool ApplyMask(int[] Mask,IplImage src_img,IplImage dst_img){//戻り値
             Cv.Set(dst_img,new CvScalar(0));
-            bool ReturnValue = true;
             if(Mask.Length==GetConstant.Neighborhood8)
                 for(int y=1;y<dst_img.Height-1;++y) 
                     for(int x=1;x<dst_img.Width-1;++x) 
@@ -181,9 +202,9 @@ public class Image{
                             dst[offset]=(byte)temp;
                         }
             else {
-                ReturnValue=false;
+                return false;
             }
-            return ReturnValue;
+            return true;
         }
     }
 }

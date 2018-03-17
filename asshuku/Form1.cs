@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define DEBUG_SAVE  
+#define DEBUG_DISPLAY  
+using System;
 using System.IO;
 //using System.IO.Path;
 using System.Text;
@@ -229,8 +231,24 @@ namespace asshuku {
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.GetSize(), BitDepth.U8, 1);
             int[] FilterMask=new int[GetConstant.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
-            //Debug.DisplayImage(MedianImage,nameof(MedianImage));//debug
-            //Debug.SaveImage(LaplacianImage,nameof(LaplacianImage));//debug
+                #if (DEBUG_SAVE)  
+                Debug.SaveImage(InputGrayImage,nameof(InputGrayImage));//debug
+                Debug.SaveImage(MedianImage,nameof(MedianImage));//debug
+                Debug.SaveImage(LaplacianImage,nameof(LaplacianImage));//debug
+                #endif 
+                #if (DEBUG_DISPLAY)  
+                Debug.DisplayImage(InputGrayImage,nameof(InputGrayImage));//debug
+                Debug.DisplayImage(MedianImage,nameof(MedianImage));//debug
+                Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
+                #endif 
+            Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
+                #if (DEBUG_SAVE)  
+                Debug.SaveImage(LaplacianImage,nameof(LaplacianImage));//debug
+                #endif 
+                #if (DEBUG_DISPLAY)  
+                Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
+                #endif 
+            
             Cv.ReleaseImage(MedianImage);
             
             int[] Histgram=new int[GetConstant.Tone8Bit];
@@ -272,7 +290,7 @@ namespace asshuku {
             }
             sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Restart();
-            PNGOut(files);//PNGOptimize
+            //PNGOut(files);//PNGOptimize
             sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
         }
         private int GetFileNameBeforeChange(IEnumerable<string> files,string[] AllOldFileName) {
