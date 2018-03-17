@@ -1,5 +1,5 @@
-﻿#define DEBUG_SAVE  
-#define DEBUG_DISPLAY  
+﻿//#define DEBUG_SAVE  
+//#define DEBUG_DISPLAY  
 using System;
 using System.IO;
 //using System.IO.Path;
@@ -42,57 +42,7 @@ namespace asshuku {
                 logs.Items.Add(Path.GetFileNameWithoutExtension(f)+" -> "+ i++ +" "+FileName);
                 file.MoveTo(PathName+"/"+FileName);
             }
-        }/* */
-        /*private void ReNameAlfaBeta(string PathName,ref IEnumerable<string> files,string[] NewFileName) {
-            int i=0;
-            foreach(string f in files) {
-                FileInfo file=new FileInfo(f);
-                if(file.Extension==".jpg"||file.Extension==".jpeg"||file.Extension==".JPG"||file.Extension==".JPEG") {//jpg
-                    logs.Items.Add(Path.GetFileNameWithoutExtension(f)+" -> "+i+" "+(NewFileName[i]+".jpg"));
-                    file.MoveTo((PathName+"/"+NewFileName[i++]+".jpg"));
-                } else {//png
-                    logs.Items.Add(Path.GetFileNameWithoutExtension(f)+" -> "+i+" "+(NewFileName[i]+".png"));
-                    file.MoveTo((PathName+"/"+NewFileName[i++]+".png"));
-                }
-            }
-        }/* */             
-        private void NoiseRemoveTwoArea(IplImage p_img,byte max) {
-            IplImage q_img=Cv.CreateImage(Cv.GetSize(p_img),BitDepth.U8,1);
-            unsafe {
-                byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
-                for(int y=0;y<q_img.ImageSize;++y)q[y]=p[y]<max?(byte)0:(byte)255;//First, binarize
-                for(int y=1;y<q_img.Height-1;++y) 
-                    for(int x=1;x<q_img.Width-1;++x) { 
-                        int offset=q_img.WidthStep*y+x;
-                        if(q[offset]!=0)continue;//Count white spots around black dots
-                        for(int yy=-1;yy<2;++yy) 
-                            for(int xx=-1;xx<2;++xx) 
-                                if(q[q_img.WidthStep*(y+yy)+x+xx]==255)
-                                    ++q[offset];
-                    }
-                for(int y=1;y<q_img.Height-1;++y) {//
-                    int yoffset=(q_img.WidthStep*y);
-                    for(int x=1;x<q_img.Width-1;++x) {
-                        int yxoffset =yoffset+x;
-                        if(q[yxoffset]<=6)continue;
-                        if(q[yxoffset]==8){
-                            p[yxoffset]=max;//Independent
-                            continue;
-                        }
-                        //if(q[yxoffset]==7)//When there are seven white spots in the periphery
-                        for(int yy=-1;yy<2;++yy) 
-                            for(int xx=-1;xx<2;++xx) {
-                                int offset=q_img.WidthStep*(y+yy)+x+xx;
-                                if(q[offset]!=7)continue;//仲間 ペア の有無
-                                p[yxoffset]=max;//q[offset]=0;//Unnecessary 
-                                p[offset]=max;q[offset]=0;
-                                yy=1;break;
-                            }
-                    }
-                }
-            }
-            Cv.ReleaseImage(q_img);
-        }        
+        }             
         private void WhiteCut(IplImage p_img,IplImage q_img,int hi,int fu,int mi,int yo) {
             unsafe {
                 byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
@@ -144,7 +94,6 @@ namespace asshuku {
             });
             p.Close();
         }
-                   
         private void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
             unsafe {
                 byte* p=(byte*)p_img.ImageData;
@@ -221,7 +170,7 @@ namespace asshuku {
             return (Range - ((Range+1)&1));//奇数にしたい
         }
         private byte GetConcentrationThreshold(byte ToneValueMax,byte ToneValueMin){
-            return (byte)((ToneValueMax-ToneValueMin)*25/GetConstant.Tone8Bit);
+            return (byte)((ToneValueMax-ToneValueMin)*25/Constants.Tone8Bit);
         }
         private void CutMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
@@ -229,7 +178,7 @@ namespace asshuku {
             Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
 
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.GetSize(), BitDepth.U8, 1);
-            int[] FilterMask=new int[GetConstant.Neighborhood8];
+            int[] FilterMask=new int[Constants.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
                 #if (DEBUG_SAVE)  
                 Debug.SaveImage(InputGrayImage,nameof(InputGrayImage));//debug
@@ -251,7 +200,7 @@ namespace asshuku {
             
             Cv.ReleaseImage(MedianImage);
             
-            int[] Histgram=new int[GetConstant.Tone8Bit];
+            int[] Histgram=new int[Constants.Tone8Bit];
             int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
             byte ToneValueMax=Image.GetToneValueMax(Histgram);
             byte ToneValueMin=Image.GetToneValueMin(Histgram);
@@ -326,6 +275,7 @@ namespace asshuku {
             }
         }
         private void CreateZip(string PathName,IEnumerable<string> files) {
+            string Extension="zip";
             if(radioButton3.Checked) {//Ionic.Zip
                 Ionic.Zip.ZipFile zip=new Ionic.Zip.ZipFile();//Create a ZIP archive
                 if(radioButton4.Checked) zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Level9;//max
@@ -335,19 +285,17 @@ namespace asshuku {
                     ZipEntry entry=zip.AddFile(f);//Add a file
                     entry.FileName=new FileInfo(f).Name;
                 } 
-                zip.Save(PathName+".zip");//Create a ZIP archive
-                RenameNumberOnlyFile(PathName,"zip");
+                zip.Save(PathName+"."+Extension);//Create a ZIP archive
             } else {
-                string Extension="zip";
                 if(radioButton2.Checked) Extension="7z";
                 StringBuilder strShortPath=new StringBuilder(1024);
                 GetShortPathName(PathName,strShortPath,1024);                
                 richTextBox1.Text+="\n"+PathName+"."+Extension+"\n";
-                if(radioButton5.Checked) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
-                else if(radioButton4.Checked) SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
+                if(radioButton5.Checked)SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
+                else if(radioButton4.Checked)SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
                 else SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
-                RenameNumberOnlyFile(PathName,Extension);
             }
+            RenameNumberOnlyFile(PathName,Extension);
         }
         private string GetNumberOnlyPath(string PathName) {
             string FileName = System.IO.Path.GetFileName(PathName);//Z:\[宮下英樹] センゴク権兵衛 第05巻 ->[宮下英樹] センゴク権兵衛 第05巻
@@ -396,8 +344,7 @@ namespace asshuku {
                 MessageBox.Show("Please select folders.");
                 return;
             } 
-            System.Collections.Specialized.StringCollection filespath=Clipboard.GetFileDropList();//Get filepath from clipboard
-            FileProcessing(filespath);
+            FileProcessing(Clipboard.GetFileDropList());
         }
         private void button2_Click(object sender,EventArgs e) {//Folder dialog related.
             FolderBrowserDialog fbd=new FolderBrowserDialog();//Create an instance of the FolderBrowserDialog class

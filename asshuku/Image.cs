@@ -75,11 +75,11 @@ public class Image{
             Cv.ReleaseImage(dst_img);
             return true;
         }
-        public static string SelectAscendingDescendingOrder(IplImage src_img){
+        public static bool SelectAscendingDescendingOrder(IplImage src_img){
             unsafe{
                 byte* src=(byte*)src_img.ImageData;
                 int Average =(int)((src[0]+src[(src_img.Height*src_img.Width)-1]+src[src_img.Width-1]+src[(src_img.Height*src_img.Width)-src_img.Width-1])>>2);
-                return Average > 127 ? "DescendingOrder":"AscendingOrder";
+                return Average > 127 ? Define.DESCENDING_ORDER:Define.ASCENDING_ORDER;
             }
         }
         delegate byte SelectBucketMedian(int[] Bucket, int Median);
@@ -89,14 +89,14 @@ public class Image{
             Cv.Copy(src_img,dst_img);
             int MaskSize=n>>1;//
             SelectBucketMedian BucketMedian;
-            if(SelectAscendingDescendingOrder(src_img)=="DescendingOrder")
+            if(SelectAscendingDescendingOrder(src_img)==Define.DESCENDING_ORDER)
                 BucketMedian=GetBucketMedianDescendingOrder;
             else BucketMedian=GetBucketMedianAscendingOrder;
             
             unsafe{                    
                 byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
                 for(int y=MaskSize;y<src_img.Height-MaskSize;y++){
-                    int[] Bucket=new int[GetConstant.Tone8Bit];//256tone It is cleared each time
+                    int[] Bucket=new int[Constants.Tone8Bit];//256tone It is cleared each time
                     for(int x=0;x<n;x++)
                         for(int yy=y-MaskSize;yy<=y+MaskSize;yy++)
                             Bucket[src[yy*src_img.Width+x]]++;
@@ -127,7 +127,7 @@ public class Image{
                 for(int y=1;y<dst_img.Height-1;++y) {
                     for(int x=1;x<dst_img.Width-1;++x) {
                         int offset=(dst_img.WidthStep*y)+x;
-                        byte[] temp = new byte[GetConstant.Neighborhood8];
+                        byte[] temp = new byte[Constants.Neighborhood8];
                         temp[0]=(src[offset-dst_img.WidthStep-1]);
                         temp[1]=(src[offset-dst_img.WidthStep]);
                         temp[2]=(src[offset-dst_img.WidthStep+1]);
@@ -156,7 +156,7 @@ public class Image{
         }
         //src_img:入出力
         public static bool ApplyMask(int[] Mask,IplImage src_img){
-            if((Mask.Length!=GetConstant.Neighborhood8)&&(Mask.Length!=GetConstant.Neighborhood4))return false;
+            if((Mask.Length!=Constants.Neighborhood8)&&(Mask.Length!=Constants.Neighborhood4))return false;
             IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
             ApplyMask(Mask,src_img,dst_img);
             Cv.Copy(dst_img,src_img);//dst_img->src_img
@@ -165,7 +165,7 @@ public class Image{
         }
         public static bool ApplyMask(int[] Mask,IplImage src_img,IplImage dst_img){//戻り値
             Cv.Set(dst_img,new CvScalar(0));
-            if(Mask.Length==GetConstant.Neighborhood8)
+            if(Mask.Length==Constants.Neighborhood8)
                 for(int y=1;y<dst_img.Height-1;++y) 
                     for(int x=1;x<dst_img.Width-1;++x) 
                         unsafe {
@@ -185,7 +185,7 @@ public class Image{
                             temp = temp>255?255:temp<0?0:temp;
                             dst[offset]=(byte)temp;
                         }
-            else if(Mask.Length==GetConstant.Neighborhood4)
+            else if(Mask.Length==Constants.Neighborhood4)
                 for(int y=1;y<dst_img.Height-1;++y) 
                     for(int x=1;x<dst_img.Width-1;++x) 
                         unsafe {
