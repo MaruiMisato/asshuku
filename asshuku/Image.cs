@@ -3,6 +3,15 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 public class Image{
+    public static unsafe byte GetPixel(IplImage src_img,int x,int y){
+        byte* src=(byte*)src_img.ImageData;
+        return src[src_img.Width*y+x];
+    }
+    public static unsafe  bool SetPixel(IplImage src_img,int x,int y,byte PixelValue){
+        byte* src=(byte*)src_img.ImageData;
+        src[src_img.Width*y+x]=PixelValue;
+        return true;
+    }
     public static int GetShortSide(IplImage p_img){
         return p_img.Width>p_img.Height?p_img.Width:p_img.Height;
     }

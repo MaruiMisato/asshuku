@@ -32,22 +32,22 @@ namespace asshuku {
                 logs.Items.Add(Path.GetFileNameWithoutExtension(f)+" -> "+ i++ +" "+FileName);
                 file.MoveTo(PathName+"/"+FileName);
             }
-        }             
-        private unsafe void WhiteCut(IplImage p_img,IplImage q_img,int hi,int fu,int mi,int yo) {
-            byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
-            for(int y=hi;y<=mi;++y) 
-                for(int x=fu;x<=yo;++x)
-                    q[q_img.WidthStep*(y-hi)+(x-fu)]=p[p_img.WidthStep*y+x];
         }
-        private unsafe void WhiteCutColor(ref string f,IplImage q_img,int hi,int fu,int mi,int yo) {//階調値線形変換はしない 
+        private unsafe void WhiteCut(IplImage p_img,IplImage q_img,int YLow,int XLow,int YHigh,int XHigh) {
+            byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
+            for(int y=YLow;y<=YHigh;++y) 
+                for(int x=XLow;x<=XHigh;++x)
+                    q[q_img.WidthStep*(y-YLow)+(x-XLow)]=p[p_img.WidthStep*y+x];
+        }
+        private unsafe void WhiteCutColor(ref string f,IplImage q_img,int YLow,int XLow,int YHigh,int XHigh) {//階調値線形変換はしない 
             Bitmap bmp=new Bitmap(f); 
             BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
             byte[] b=new byte[bmp.Width*bmp.Height*4];
             Marshal.Copy(data.Scan0,b,0,b.Length);
             byte* q=(byte*)q_img.ImageData;
-            for(int y=hi;y<=mi;++y) 
-                for(int x=fu;x<=yo;++x) {
-                    int qoffset=q_img.WidthStep*(y-hi)+(x-fu)*3,offset=(bmp.Width*y+x)*4;
+            for(int y=YLow;y<=YHigh;++y) 
+                for(int x=XLow;x<=XHigh;++x) {
+                    int qoffset=q_img.WidthStep*(y-YLow)+(x-XLow)*3,offset=(bmp.Width*y+x)*4;
                     q[0+qoffset]=b[0+offset];q[1+qoffset]=b[1+offset];q[2+qoffset]=b[2+offset];
                 }
             bmp.UnlockBits(data);
@@ -71,7 +71,7 @@ namespace asshuku {
             });
             p.Close();
         }
-        private unsafe void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
+        /*private unsafe void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
             byte* p=(byte*)p_img.ImageData;
             int ThresholdWidth = p_img.Width-TimesThreshold;
             for(int y=0;y<p_img.Height-4;y++) {//Y上取得
@@ -134,7 +134,78 @@ namespace asshuku {
                 }
             }
             XHigh=XHigh>=p_img.Width?p_img.Width-1:XHigh;
-        }        
+        }  /**/ 
+        private bool CompareArrayAnd(int Threshold,int[] Array){
+            foreach(int Value in Array){
+                if(Threshold>Value)continue;
+                else return false;
+            }
+            return true;
+        }
+        private unsafe void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
+            byte* p=(byte*)p_img.ImageData;
+            int ThresholdWidth = p_img.Width-TimesThreshold;
+            //Y上取得
+            int[] YLowArray=new int[5];
+            for(int yy = 0;(yy<5);++yy) 
+                for(int x = 0;x<p_img.Width;x++)
+                    if(p[p_img.WidthStep*yy+x]<ConcentrationThreshold)++YLowArray[yy];
+            if(CompareArrayAnd(ThresholdWidth,YLowArray))YLow=0;  
+        
+            for(int y=1;y<p_img.Height-4;y++){
+                YLowArray[4]=0;
+                for(int x = 0;x<p_img.Width;x++)
+                    if(p[p_img.WidthStep*(y+4)+x]<ConcentrationThreshold) ++YLowArray[4];
+                if(ThresholdWidth>YLowArray[4]) { YLow=y-4; break; }
+            } 
+            YLow=YLow<0?0:YLow;   
+            for(int y=p_img.Height-1;y>(YLow+4);--y) {//Y下取得
+                if(y==p_img.Height-1) {
+                    int[] l=new int[5];
+                    for(int yy=-4;(yy<1);++yy) 
+                        for(int x=0;x<p_img.Width;x++) 
+                            if(p[p_img.WidthStep*(y+yy)+x]<ConcentrationThreshold)++l[-yy];
+                    if((ThresholdWidth>l[0])&&(ThresholdWidth>l[1])&&(ThresholdWidth>l[2])&&(ThresholdWidth>l[3])&&(ThresholdWidth>l[4])) { YHigh=y; break; }
+                } else {
+                    int l=0;
+                    for(int x=0;x<p_img.Width;x++) 
+                        if(p[p_img.WidthStep*(y-4)+x]<ConcentrationThreshold)++l;
+                    if((ThresholdWidth>l)) { YHigh=y+4; break; }
+                }
+            }
+            YHigh=YHigh>=p_img.Height?p_img.Height-1:YHigh;
+            int ThresholdHeight = (YHigh-YLow)-TimesThreshold;
+            for(int x=0;x<p_img.Width-4;x++) {//X左取得
+                if(x==0) {
+                    int[] l=new int[5];
+                    for(int xx=0;(xx<5);++xx) 
+                        for(int y=YLow;y<YHigh;y++) 
+                            if(p[x+xx+p_img.WidthStep*y]<ConcentrationThreshold)++l[xx];
+                    if((ThresholdHeight>l[0])&&(ThresholdHeight>l[1])&&(ThresholdHeight>l[2])&&(ThresholdHeight>l[3])&&(ThresholdHeight>l[4])) { XLow=0; break; }
+                } else {
+                    int l=0;
+                    for(int y=YLow;y<YHigh;y++) 
+                        if(p[(x+4)+p_img.WidthStep*y]<ConcentrationThreshold)++l;
+                    if(ThresholdHeight>l) { XLow=x-4; break; }
+                }
+            }                
+            XLow=XLow<0?0:XLow;
+            for(int x=p_img.Width-1;x>(XLow+4);--x) {//X右取得
+                if(x==p_img.Width-1) {
+                    int[] l=new int[5];
+                    for(int xx=-4;(xx<1);++xx) 
+                        for(int y=YLow;y<YHigh;y++) 
+                            if(p[(x+xx)+p_img.WidthStep*y]<ConcentrationThreshold)++l[-xx];
+                    if((ThresholdHeight>l[0])&&(ThresholdHeight>l[1])&&(ThresholdHeight>l[2])&&(ThresholdHeight>l[3])&&(ThresholdHeight>l[4])) { XHigh=x; break; }
+                } else {
+                    int l=0;
+                    for(int y=YLow;y<YHigh;y++) 
+                        if(p[(x-4)+p_img.WidthStep*y]<ConcentrationThreshold)++l;
+                    if(ThresholdHeight>l) { XHigh=x+4; break; }
+                }
+            }
+            XHigh=XHigh>=p_img.Width?p_img.Width-1:XHigh;
+        }     
         private int GetRangeMedianF(IplImage p_img){
             return StandardAlgorithm.Math.MakeItOdd((int) Math.Sqrt(Math.Sqrt(Image.GetShortSide(p_img)+80)));
         }
@@ -161,6 +232,7 @@ namespace asshuku {
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
                 #endif 
 
+            Cv.ReleaseImage(MedianImage);
             Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
 
                 #if (DEBUG_SAVE)  
@@ -170,7 +242,6 @@ namespace asshuku {
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
                 #endif 
             
-            Cv.ReleaseImage(MedianImage);
             int[] Histgram=new int[Constants.Tone8Bit];
             int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
             byte ToneValueMax=Image.GetToneValueMax(Histgram);
