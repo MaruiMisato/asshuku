@@ -9,22 +9,18 @@ public class Image{
     public static int GetLongSide(IplImage p_img){
         return p_img.Width>p_img.Height?p_img.Height:p_img.Width;
     }
-    public static byte GetToneValueMax(IplImage p_img) {
+    public static unsafe byte GetToneValueMax(IplImage p_img) {
         byte ToneValueMax=0;
-        unsafe {
-            byte* p=(byte*)p_img.ImageData;
-            for(int y=0;y<p_img.ImageSize;y++) 
-                ToneValueMax = p[y]>ToneValueMax ? p[y]:ToneValueMax;
-        }
+        byte* p=(byte*)p_img.ImageData;
+        for(int y=0;y<p_img.ImageSize;y++) 
+            ToneValueMax = p[y]>ToneValueMax ? p[y]:ToneValueMax;
         return ToneValueMax;
     }        
-    public static byte GetToneValueMin(IplImage p_img) {
+    public static unsafe byte GetToneValueMin(IplImage p_img) {
         byte ToneValueMin=255;
-        unsafe {
-            byte* p=(byte*)p_img.ImageData;
-            for(int y=0;y<p_img.ImageSize;++y) 
-                ToneValueMin = p[y]<ToneValueMin ? p[y]:ToneValueMin;
-        }
+        byte* p=(byte*)p_img.ImageData;
+        for(int y=0;y<p_img.ImageSize;++y) 
+            ToneValueMin = p[y]<ToneValueMin ? p[y]:ToneValueMin;
         return ToneValueMin;
     }
     public static byte GetToneValueMax(int[] Histgram){
@@ -39,17 +35,17 @@ public class Image{
     }             
     public static int GetHistgramR(ref string f,int[] Histgram) {
         int Channel=Is.GrayScale;//1:gray,3:bgr color
-        using(Bitmap bmp=new Bitmap(f)) {
-            BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
-            byte[] b=new byte[bmp.Width*bmp.Height*4];
-            Marshal.Copy(data.Scan0,b,0,b.Length);
-            for(int i=0;i<b.Length;i+=4) 
-                if(Channel==Is.Color||b[i]!=b[i+1]||b[i+2]!=b[i]) { //Color images are not executed.
-                    Channel=Is.Color;
-                    Histgram[(int)((b[i]+b[i+1]+b[i+2]+0.5)/3)]++;//四捨五入
-                }else Histgram[b[i]]++;
-            bmp.UnlockBits(data);
-        }
+        Bitmap bmp=new Bitmap(f);
+        BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
+        byte[] b=new byte[bmp.Width*bmp.Height*4];
+        Marshal.Copy(data.Scan0,b,0,b.Length);
+        for(int i=0;i<b.Length;i+=4) 
+            if(Channel==Is.Color||b[i]!=b[i+1]||b[i+2]!=b[i]) { //Color images are not executed.
+                Channel=Is.Color;
+                Histgram[(int)((b[i]+b[i+1]+b[i+2]+0.5)/3)]++;//四捨五入
+            }else Histgram[b[i]]++;
+        bmp.UnlockBits(data);
+        bmp.Dispose();
         return Channel;
     }
 
@@ -75,40 +71,35 @@ public class Image{
             Cv.ReleaseImage(dst_img);
             return true;
         }
-        public static bool SelectAscendingDescendingOrder(IplImage src_img){
-            unsafe{
-                byte* src=(byte*)src_img.ImageData;
-                int Average =(int)((src[0]+src[(src_img.Height*src_img.Width)-1]+src[src_img.Width-1]+src[(src_img.Height*src_img.Width)-src_img.Width-1])>>2);
-                return Average > 127 ? Define.DESCENDING_ORDER:Define.ASCENDING_ORDER;
-            }
+        public static unsafe bool SelectAscendingDescendingOrder(IplImage src_img){
+            byte* src=(byte*)src_img.ImageData;
+            int Average =(int)((src[0]+src[src_img.ImageSize-1]+src[src_img.Width-1]+src[src_img.ImageSize-src_img.Width-1])>>2);
+            return Average > 127 ? Is.DESCENDING_ORDER:Is.ASCENDING_ORDER;
         }
         delegate byte SelectBucketMedian(int[] Bucket, int Median);
 
-        public static bool FastestMedian(IplImage src_img,IplImage dst_img,int n){
+        public static unsafe bool FastestMedian(IplImage src_img,IplImage dst_img,int n){
             if((n&1)==0)return false;//偶数はさいなら
             Cv.Copy(src_img,dst_img);
             int MaskSize=n>>1;//
-            SelectBucketMedian BucketMedian;
-            if(SelectAscendingDescendingOrder(src_img)==Define.DESCENDING_ORDER)
+            SelectBucketMedian BucketMedian=GetBucketMedianAscendingOrder;
+            if(SelectAscendingDescendingOrder(src_img)==Is.DESCENDING_ORDER)
                 BucketMedian=GetBucketMedianDescendingOrder;
-            else BucketMedian=GetBucketMedianAscendingOrder;
-            
-            unsafe{                    
-                byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
-                for(int y=MaskSize;y<src_img.Height-MaskSize;y++){
-                    int[] Bucket=new int[Constants.Tone8Bit];//256tone It is cleared each time
-                    for(int x=0;x<n;x++)
-                        for(int yy=y-MaskSize;yy<=y+MaskSize;yy++)
-                            Bucket[src[yy*src_img.Width+x]]++;
-                        dst[y*src_img.Width+MaskSize]=BucketMedian(Bucket,((n*n)>>1));
 
-                    for(int x=MaskSize+1;x<src_img.Width-MaskSize;x++){
-                        for(int yy=y-MaskSize;yy<=y+MaskSize;yy++){
-                            Bucket[src[yy*src_img.Width+x+MaskSize-n]]--;
-                            Bucket[src[yy*src_img.Width+x+MaskSize]]++;
-                        }
-                        dst[y*src_img.Width+x]=BucketMedian(Bucket,((n*n)>>1));
+            byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
+            for(int y=MaskSize;y<src_img.Height-MaskSize;y++){
+                int[] Bucket=new int[Constants.Tone8Bit];//256tone It is cleared each time
+                for(int x=0;x<n;x++)
+                    for(int yy=y-MaskSize;yy<=y+MaskSize;yy++)
+                        Bucket[src[yy*src_img.Width+x]]++;
+                    dst[y*src_img.Width+MaskSize]=BucketMedian(Bucket,((n*n)>>1));
+
+                for(int x=MaskSize+1;x<src_img.Width-MaskSize;x++){
+                    for(int yy=y-MaskSize;yy<=y+MaskSize;yy++){
+                        Bucket[src[yy*src_img.Width+x+MaskSize-n]]--;
+                        Bucket[src[yy*src_img.Width+x+MaskSize]]++;
                     }
+                    dst[y*src_img.Width+x]=BucketMedian(Bucket,((n*n)>>1));
                 }
             }
             return true;
@@ -120,28 +111,26 @@ public class Image{
             Cv.Copy(dst_img,src_img);//dst_img->src_img
             Cv.ReleaseImage(dst_img);
         }
-        private static void Median8(IplImage src_img,IplImage dst_img){
+        private static unsafe void Median8(IplImage src_img,IplImage dst_img){
             Cv.Copy(src_img,dst_img);
-            unsafe {
-                byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
-                for(int y=1;y<dst_img.Height-1;++y) {
-                    for(int x=1;x<dst_img.Width-1;++x) {
-                        int offset=(dst_img.WidthStep*y)+x;
-                        byte[] temp = new byte[Constants.Neighborhood8];
-                        temp[0]=(src[offset-dst_img.WidthStep-1]);
-                        temp[1]=(src[offset-dst_img.WidthStep]);
-                        temp[2]=(src[offset-dst_img.WidthStep+1]);
+            byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
+            for(int y=1;y<src_img.Height-1;++y) {
+                for(int x=1;x<src_img.Width-1;++x) {
+                    int offset=(src_img.WidthStep*y)+x;
+                    byte[] temp = new byte[Constants.Neighborhood8];
+                    temp[0]=(src[offset-src_img.WidthStep-1]);
+                    temp[1]=(src[offset-src_img.WidthStep]);
+                    temp[2]=(src[offset-src_img.WidthStep+1]);
 
-                        temp[3]=(src[offset-1]);
-                        temp[4] = (src[offset]);
-                        temp[5]=(src[offset+1]);
+                    temp[3]=(src[offset-1]);
+                    temp[4] = (src[offset]);
+                    temp[5]=(src[offset+1]);
 
-                        temp[6]=(src[offset+dst_img.WidthStep-1]);
-                        temp[7]=(src[offset+dst_img.WidthStep]);
-                        temp[8]=(src[offset+dst_img.WidthStep+1]);
-                        StandardAlgorithm.Sort.Bubble(temp);
-                        dst[offset]=temp[4];
-                    }
+                    temp[6]=(src[offset+src_img.WidthStep-1]);
+                    temp[7]=(src[offset+src_img.WidthStep]);
+                    temp[8]=(src[offset+src_img.WidthStep+1]);
+                    StandardAlgorithm.Sort.Bubble(temp);
+                    dst[offset]=temp[4];
                 }
             }
         }
@@ -163,47 +152,38 @@ public class Image{
             Cv.ReleaseImage(dst_img);
             return true;
         }
-        public static bool ApplyMask(int[] Mask,IplImage src_img,IplImage dst_img){//戻り値
+        public static unsafe bool ApplyMask(int[] Mask,IplImage src_img,IplImage dst_img){//戻り値
+            if(Mask.Length!=Constants.Neighborhood8&&Mask.Length!=Constants.Neighborhood4)return false;
             Cv.Set(dst_img,new CvScalar(0));
-            if(Mask.Length==Constants.Neighborhood8)
-                for(int y=1;y<dst_img.Height-1;++y) 
-                    for(int x=1;x<dst_img.Width-1;++x) 
-                        unsafe {
-                            int offset=dst_img.WidthStep*y+x;
-                            byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
-                            int temp=(Mask[0]*src[offset-dst_img.Width-1]);
-                            temp+=(Mask[1]*src[offset-dst_img.Width]);
-                            temp+=(Mask[2]*src[offset-dst_img.Width+1]);
+            byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
+            for(int y=1;y<src_img.Height-1;++y) 
+                for(int x=1;x<src_img.Width-1;++x) {
+                    int offset=src_img.WidthStep*y+x;
+                    int temp;
+                    if(Mask.Length==Constants.Neighborhood8){
+                        temp =(Mask[0]*src[offset-src_img.Width-1]);
+                        temp+=(Mask[1]*src[offset-src_img.Width]);
+                        temp+=(Mask[2]*src[offset-src_img.Width+1]);
 
-                            temp+=(Mask[3]*src[offset-1]);
-                            temp += (Mask[4]*src[offset]);
-                            temp+=(Mask[5]*src[offset+1]);
+                        temp+=(Mask[3]*src[offset-1]);
+                        temp+=(Mask[4]*src[offset]);
+                        temp+=(Mask[5]*src[offset+1]);
 
-                            temp+=(Mask[6]*src[offset+dst_img.Width-1]);
-                            temp+=(Mask[7]*src[offset+dst_img.Width]);
-                            temp+=(Mask[8]*src[offset+dst_img.Width+1]);
-                            temp = temp>255?255:temp<0?0:temp;
-                            dst[offset]=(byte)temp;
-                        }
-            else if(Mask.Length==Constants.Neighborhood4)
-                for(int y=1;y<dst_img.Height-1;++y) 
-                    for(int x=1;x<dst_img.Width-1;++x) 
-                        unsafe {
-                            int offset=dst_img.WidthStep*y+x;
-                            byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
-                            int temp=(Mask[0]*src[offset-dst_img.Width]);
+                        temp+=(Mask[6]*src[offset+src_img.Width-1]);
+                        temp+=(Mask[7]*src[offset+src_img.Width]);
+                        temp+=(Mask[8]*src[offset+src_img.Width+1]);
+                    }else {
+                        temp=(Mask[0]*src[offset-src_img.Width]);
 
-                            temp+=(Mask[1]*src[offset-1]);
-                            temp += (Mask[2]*src[offset]);
-                            temp+=(Mask[3]*src[offset+1]);
+                        temp+=(Mask[1]*src[offset-1]);
+                        temp+=(Mask[2]*src[offset]);
+                        temp+=(Mask[3]*src[offset+1]);
 
-                            temp+=(Mask[4]*src[offset+dst_img.Width]);
-                            temp = temp>255?255:temp<0?0:temp;
-                            dst[offset]=(byte)temp;
-                        }
-            else {
-                return false;
-            }
+                        temp+=(Mask[4]*src[offset+src_img.Width]);
+                    }
+                    temp = temp>255?255:temp<0?0:temp;
+                    dst[offset]=(byte)temp;
+                }
             return true;
         }
     }

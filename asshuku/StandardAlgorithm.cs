@@ -10,4 +10,12 @@ public class StandardAlgorithm{
                     }
         }  
     }
+    public class Math{
+        public static int MakeItOdd(int Integer){
+            return (Integer - ((Integer+1)&1));//奇数にしたい -1は奇数
+        }
+        public static int MakeItEven(int Integer){
+            return (Integer - (Integer&1));//偶数にしたい
+        }
+    }
 }
