@@ -145,7 +145,7 @@ namespace asshuku {
         private unsafe int GetYLow(IplImage p_img,byte ConcentrationThreshold,int ThresholdWidth){
             byte* p=(byte*)p_img.ImageData;
             int[] YLowArray=new int[5];
-            for(int yy = 0;yy<5;++yy) 
+            for(int yy = 0;yy<=4;++yy) 
                 for(int x = 0;x<p_img.Width;x++)
                     if(p[p_img.WidthStep*yy+x]<ConcentrationThreshold)++YLowArray[yy];
             if(CompareArrayAnd(ThresholdWidth,YLowArray))return 0;  
@@ -160,7 +160,7 @@ namespace asshuku {
         private unsafe int GetYHigh(IplImage p_img,byte ConcentrationThreshold,int ThresholdWidth,int YLow){
             byte* p=(byte*)p_img.ImageData;
             int[] YHighArray=new int[5];
-            for(int yy=-4;(yy<1);++yy) 
+            for(int yy=-4;yy<1;++yy) 
                 for(int x=0;x<p_img.Width;++x) 
                     if(p[p_img.WidthStep*((p_img.Height-1)+yy)+x]<ConcentrationThreshold)++YHighArray[-yy];
             if(CompareArrayAnd(ThresholdWidth,YHighArray))return (p_img.Height-1);  
@@ -172,6 +172,21 @@ namespace asshuku {
             }
             return p_img.Height-1;//絶対到達しない
         }
+        private unsafe int GetXLow(IplImage p_img,byte ConcentrationThreshold,int ThresholdHeight,int YLow,int YHigh){
+            byte* p=(byte*)p_img.ImageData;
+            int[] XLowArray=new int[5];
+            for(int xx=0;xx<=4;++xx) 
+                for(int y=YLow;y<YHigh;y++) 
+                    if(p[xx+p_img.WidthStep*y]<ConcentrationThreshold)++XLowArray[xx];
+            if(CompareArrayAnd(ThresholdHeight,XLowArray))return 0;  
+            for(int x=0;x<p_img.Width-4;x++) {//X左取得
+                XLowArray[4]=0;
+                for(int y=YLow;y<YHigh;y++) 
+                    if(p[(x+4)+p_img.WidthStep*y]<ConcentrationThreshold)++XLowArray[4];
+                if(ThresholdHeight>XLowArray[4]) return x-4<0?0:x-4 ; 
+            }                
+            return 0;//絶対到達しない
+        }
         private unsafe void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
             byte* p=(byte*)p_img.ImageData;
             int ThresholdWidth = p_img.Width-TimesThreshold;
@@ -180,21 +195,7 @@ namespace asshuku {
             YHigh=GetYHigh(p_img,ConcentrationThreshold,ThresholdWidth,YLow);
             
             int ThresholdHeight = (YHigh-YLow)-TimesThreshold;
-            for(int x=0;x<p_img.Width-4;x++) {//X左取得
-                if(x==0) {
-                    int[] l=new int[5];
-                    for(int xx=0;(xx<5);++xx) 
-                        for(int y=YLow;y<YHigh;y++) 
-                            if(p[x+xx+p_img.WidthStep*y]<ConcentrationThreshold)++l[xx];
-                    if((ThresholdHeight>l[0])&&(ThresholdHeight>l[1])&&(ThresholdHeight>l[2])&&(ThresholdHeight>l[3])&&(ThresholdHeight>l[4])) { XLow=0; break; }
-                } else {
-                    int l=0;
-                    for(int y=YLow;y<YHigh;y++) 
-                        if(p[(x+4)+p_img.WidthStep*y]<ConcentrationThreshold)++l;
-                    if(ThresholdHeight>l) { XLow=x-4; break; }
-                }
-            }                
-            XLow=XLow<0?0:XLow;
+            XLow=GetXLow(p_img,ConcentrationThreshold,ThresholdHeight,YLow,YHigh);
             for(int x=p_img.Width-1;x>(XLow+4);--x) {//X右取得
                 if(x==p_img.Width-1) {
                     int[] l=new int[5];
