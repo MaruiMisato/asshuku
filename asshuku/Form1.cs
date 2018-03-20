@@ -57,8 +57,7 @@ namespace asshuku {
             byte* p=(byte*)p_img.ImageData;
             for(int y=0;y<p_img.Height;++y)
                 for(int x=0;x<p_img.Width;++x){
-                    double temp = (magnification*(p[p_img.WidthStep*y+x]-min));
-                    p[p_img.WidthStep*y+x]=(byte)(temp>255?255:temp<0?0:temp);//255.99ないと255が254になる
+                    p[p_img.WidthStep*y+x]=Image.CheckRange2Byte((magnification*(p[p_img.WidthStep*y+x]-min)));//255.99ないと255が254になる
                 }
         }        
         private void PNGOut(IEnumerable<string> files) {
@@ -203,7 +202,7 @@ namespace asshuku {
             }
             return p_img.Width-1;
         }
-        private void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
+        /*private void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
             int ThresholdWidth = p_img.Width-TimesThreshold;
             //Y上取得
             YLow=GetYLow(p_img,ConcentrationThreshold,ThresholdWidth);
@@ -212,7 +211,7 @@ namespace asshuku {
             int ThresholdHeight = (YHigh-YLow)-TimesThreshold;
             XLow=GetXLow(p_img,ConcentrationThreshold,ThresholdHeight,YLow,YHigh);
             XHigh=GetXHigh(p_img,ConcentrationThreshold,ThresholdHeight,YLow,YHigh,XLow);
-        }
+        }/* */
         private (int YLow,int XLow,int YHigh,int XHigh) GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold) {
             int ThresholdWidth = p_img.Width-TimesThreshold;
             //Y上取得

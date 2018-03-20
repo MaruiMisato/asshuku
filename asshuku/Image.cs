@@ -18,6 +18,12 @@ public class Image{
     public static int GetLongSide(IplImage p_img){
         return p_img.Width>p_img.Height?p_img.Height:p_img.Width;
     }
+    public static byte CheckRange2Byte(int ByteValue){
+        return(byte)(ByteValue>255?255:ByteValue<0?0:ByteValue);
+    }
+    public static byte CheckRange2Byte(double ByteValue){
+        return(byte)(ByteValue>255?255:ByteValue<0?0:ByteValue);
+    }
     public static unsafe byte GetToneValueMax(IplImage p_img) {
         byte ToneValueMax=0;
         byte* p=(byte*)p_img.ImageData;
@@ -190,8 +196,7 @@ public class Image{
 
                         temp+=(Mask[4]*src[offset+src_img.Width]);
                     }
-                    temp = temp>255?255:temp<0?0:temp;
-                    dst[offset]=(byte)temp;
+                    dst[offset]=Image.CheckRange2Byte(temp);
                 }
             return true;
         }
