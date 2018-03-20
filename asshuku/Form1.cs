@@ -72,7 +72,7 @@ namespace asshuku {
         private unsafe void Transform2Linear(ref string f,IplImage p_img,ToneValue ImageToneValue) {//内部の空白を除去 グレイスケールのみ
             double magnification =255.99/(ImageToneValue.Max-ImageToneValue.Min);
             byte* p=(byte*)p_img.ImageData;
-            for(int y=0;y<p_img.Height;++y)
+            for(int y=0;y<p_img.Height;++y)//
                 for(int x=0;x<p_img.Width;++x)
                     p[p_img.WidthStep*y+x]=Image.CheckRange2Byte((magnification*(p[p_img.WidthStep*y+x]-ImageToneValue.Min)));//255.99ないと255が254になる
         }        
