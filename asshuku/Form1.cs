@@ -34,8 +34,9 @@ namespace asshuku {
             public int XLow{get;set;}
             public int YHigh{get;set;}
             public int XHigh{get;set;}
-            public int Width{get;set;}
-            public int Height{get;set;}
+            //public int Width{get;set;}
+            //public int Height{get;set;}
+            public CvSize Size=new CvSize();
         }
         private void ReNameAlfaBeta(string PathName,ref IEnumerable<string> files,string[] NewFileName) {
             int i=0;
@@ -175,13 +176,13 @@ namespace asshuku {
                 return false;
             if(!GetYHigh(p_img,ImageThreshold,NewImageRect))//X左
                 return false;
-            NewImageRect.Height=NewImageRect.YHigh-NewImageRect.YLow;
-            ImageThreshold.Height = NewImageRect.Height-ImageThreshold.Times;
+            NewImageRect.Size.Height=NewImageRect.YHigh-NewImageRect.YLow;
+            ImageThreshold.Height = NewImageRect.Size.Height-ImageThreshold.Times;
             if(!GetXLow(p_img,ImageThreshold,NewImageRect))//Y下取得
                 return false;
             if(!GetXHigh(p_img,ImageThreshold,NewImageRect))//X右
                 return false;
-            NewImageRect.Width=NewImageRect.XHigh-NewImageRect.XLow;
+            NewImageRect.Size.Width=NewImageRect.XHigh-NewImageRect.XLow;
             return true;
         }   
         private int GetRangeMedianF(IplImage p_img){
@@ -192,10 +193,10 @@ namespace asshuku {
         }
         private bool CutMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
-            IplImage MedianImage = Cv.CreateImage(InputGrayImage.GetSize(), BitDepth.U8, 1);
+            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
 
-            IplImage LaplacianImage = Cv.CreateImage(MedianImage.GetSize(), BitDepth.U8, 1);
+            IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
             int[] FilterMask=new int[Const.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
                 
@@ -235,8 +236,8 @@ namespace asshuku {
             Rect NewImageRect=new Rect();
             if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect))return false;
             Cv.ReleaseImage(LaplacianImage);
-            writerSync.WriteLine(f+"\n\tthreshold="+ImageThreshold.Concentration+":ToneValueMin="+ImageToneValue.Min+":ToneValueMax="+ImageToneValue.Max+":hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n\t("+InputGrayImage.Width+","+InputGrayImage.Height+")\n\t("+NewImageRect.Width+","+NewImageRect.Height+")");//prb
-            IplImage OutputCutImage=Cv.CreateImage(new CvSize(NewImageRect.Width,NewImageRect.Height),BitDepth.U8,Channel);//prb
+            writerSync.WriteLine(f+"\n\tthreshold="+ImageThreshold.Concentration+":ToneValueMin="+ImageToneValue.Min+":ToneValueMax="+ImageToneValue.Max+":hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n\t("+InputGrayImage.Width+","+InputGrayImage.Height+")\n\t("+NewImageRect.Size.Width+","+NewImageRect.Size.Height+")");//prb
+            IplImage OutputCutImage=Cv.CreateImage(NewImageRect.Size,BitDepth.U8,Channel);//prb
             if(Channel==Is.GrayScale){         
                 WhiteCut(InputGrayImage,OutputCutImage,NewImageRect);
                 Image.Transform2Linear(OutputCutImage,ImageToneValue);//内部の空白を除去 階調値変換
