@@ -156,6 +156,16 @@ namespace asshuku {
             int XLow=GetXLow(p_img,ImageThreshold,YLow,YHigh);
             int XHigh=GetXHigh(p_img,ImageThreshold,YLow,YHigh,XLow);
             return (YLow,XLow,YHigh,XHigh);
+        }/* */
+        private void GetNewImageSize(IplImage p_img,Threshold ImageThreshold,Rect NewImageRect) {
+            ImageThreshold.Width = p_img.Width-ImageThreshold.Times;
+            //Y上取得
+            NewImageRect.YLow=GetYLow(p_img,ImageThreshold);
+            NewImageRect.YHigh=GetYHigh(p_img,ImageThreshold,NewImageRect.YLow);
+            
+            ImageThreshold.Height = (NewImageRect.YHigh-NewImageRect.YLow)-ImageThreshold.Times;
+            NewImageRect.XLow=GetXLow(p_img,ImageThreshold,NewImageRect.YLow,NewImageRect.YHigh);
+            NewImageRect.XHigh=GetXHigh(p_img,ImageThreshold,NewImageRect.YLow,NewImageRect.YHigh,NewImageRect.XLow);
         }   
         private int GetRangeMedianF(IplImage p_img){
             return StandardAlgorithm.Math.MakeItOdd((int) Math.Sqrt(Math.Sqrt(Image.GetShortSide(p_img)+80)));
