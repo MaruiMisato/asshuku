@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;//正規表現
 using System.Runtime.InteropServices;
 using Ionic.Zip;
 using OpenCvSharp;
+using static Image;
 namespace asshuku {    
     public partial class Form1:Form {
         [DllImport("7-zip32.dll",CharSet=CharSet.Ansi)]
@@ -27,10 +28,6 @@ namespace asshuku {
             public int Width{get;set;}
             public int Height{get;set;}
             public int Times=1;
-        }
-        public class ToneValue{
-            public byte Max{get;set;}
-            public byte Min{get;set;}
         }
         private void ReNameAlfaBeta(string PathName,ref IEnumerable<string> files,string[] NewFileName) {
             int i=0;
@@ -68,14 +65,7 @@ namespace asshuku {
             for(int y=0;y<p_img.Height;++y)
                 for(int x=0;x<p_img.Width;++x)
                     p[p_img.WidthStep*y+x]=Image.CheckRange2Byte((magnification*(p[p_img.WidthStep*y+x]-min)));//255.99ないと255が254になる
-        }/**/       
-        private unsafe void Transform2Linear(ref string f,IplImage p_img,ToneValue ImageToneValue) {//内部の空白を除去 グレイスケールのみ
-            double magnification =255.99/(ImageToneValue.Max-ImageToneValue.Min);
-            byte* p=(byte*)p_img.ImageData;
-            for(int y=0;y<p_img.Height;++y)//
-                for(int x=0;x<p_img.Width;++x)
-                    p[p_img.WidthStep*y+x]=Image.CheckRange2Byte((magnification*(p[p_img.WidthStep*y+x]-ImageToneValue.Min)));//255.99ないと255が254になる
-        }        
+        }/**/                       
         private void PNGOut(IEnumerable<string> files) {
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
             p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
@@ -220,7 +210,7 @@ namespace asshuku {
             IplImage OutputCutImage=Cv.CreateImage(new CvSize((XHigh-XLow)+1,(YHigh-YLow)+1),BitDepth.U8,Channel);
             if(Channel==Is.GrayScale){         
                 WhiteCut(InputGrayImage,OutputCutImage,YLow,XLow,YHigh,XHigh);
-                Transform2Linear(ref f,OutputCutImage,ImageToneValue);//内部の空白を除去 階調値変換
+                Image.Transform2Linear(OutputCutImage,ImageToneValue);//内部の空白を除去 階調値変換
                 //Transform2Linear(ref f,OutputCutImage,ImageToneValue.Min,255.99/(ImageToneValue.Max-ImageToneValue.Min));//内部の空白を除去 階調値変換
             }else{//Is.Color
                 WhiteCutColor(ref f,OutputCutImage,YLow,XLow,YHigh,XHigh);//bitmapで読まないと4Byteなのか3Byteなのか曖昧なので統一は出来ない

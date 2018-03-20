@@ -27,7 +27,7 @@ public class Image{
     public static unsafe byte GetToneValueMax(IplImage p_img) {
         byte ToneValueMax=0;
         byte* p=(byte*)p_img.ImageData;
-        for(int y=0;y<p_img.ImageSize;y++) 
+        for(int y=0;y<p_img.ImageSize;++y) 
             ToneValueMax = p[y]>ToneValueMax ? p[y]:ToneValueMax;
         return ToneValueMax;
     }        
@@ -63,7 +63,16 @@ public class Image{
         bmp.Dispose();
         return Channel;
     }
-
+    public class ToneValue{
+        public byte Max{get;set;}
+        public byte Min{get;set;}
+    }
+    public static unsafe void Transform2Linear(IplImage p_img,ToneValue ImageToneValue) {//内部の空白を除去 グレイスケールのみ
+        double magnification =255.99/(ImageToneValue.Max-ImageToneValue.Min);
+        byte* p=(byte*)p_img.ImageData;
+        for(int y=0;y<p_img.ImageSize;++y) 
+            p[y]=Image.CheckRange2Byte((magnification*(p[y]-ImageToneValue.Min)));//255.99ないと255が254になる
+    }
     public class Filter{
         private static byte GetBucketMedianAscendingOrder(int[] Bucket, int Median){
             byte YIndex=0;//256 探索範囲の最小値を探す　
