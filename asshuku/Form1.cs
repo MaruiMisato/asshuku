@@ -70,70 +70,6 @@ namespace asshuku {
             });
             p.Close();
         }
-        /*private unsafe void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
-            byte* p=(byte*)p_img.ImageData;
-            int ThresholdWidth = p_img.Width-TimesThreshold;
-            for(int y=0;y<p_img.Height-4;y++) {//Y上取得
-                if(y==0){
-                    int[] l=new int[5];
-                    for(int yy = 0;(yy<5);++yy) 
-                        for(int x = 0;x<p_img.Width;x++)
-                            if(p[p_img.WidthStep*(y+yy)+x]<ConcentrationThreshold)++l[yy];
-                    if((ThresholdWidth>l[0])&&(ThresholdWidth>l[1])&&(ThresholdWidth>l[2])&&(ThresholdWidth>l[3])&&(ThresholdWidth>l[4])) { YLow=0; break; }
-                } else {
-                    int l=0;
-                    for(int x = 0;x<p_img.Width;x++)
-                        if(p[p_img.WidthStep*(y+4)+x]<ConcentrationThreshold) ++l;
-                    if(ThresholdWidth>l) { YLow=y-4; break; }
-                }
-            }YLow=YLow<0?0:YLow;            
-            for(int y=p_img.Height-1;y>(YLow+4);--y) {//Y下取得
-                if(y==p_img.Height-1) {
-                    int[] l=new int[5];
-                    for(int yy=-4;(yy<1);++yy) 
-                        for(int x=0;x<p_img.Width;x++) 
-                            if(p[p_img.WidthStep*(y+yy)+x]<ConcentrationThreshold)++l[-yy];
-                    if((ThresholdWidth>l[0])&&(ThresholdWidth>l[1])&&(ThresholdWidth>l[2])&&(ThresholdWidth>l[3])&&(ThresholdWidth>l[4])) { YHigh=y; break; }
-                } else {
-                    int l=0;
-                    for(int x=0;x<p_img.Width;x++) 
-                        if(p[p_img.WidthStep*(y-4)+x]<ConcentrationThreshold)++l;
-                    if((ThresholdWidth>l)) { YHigh=y+4; break; }
-                }
-            }
-            YHigh=YHigh>=p_img.Height?p_img.Height-1:YHigh;
-            int ThresholdHeight = (YHigh-YLow)-TimesThreshold;
-            for(int x=0;x<p_img.Width-4;x++) {//X左取得
-                if(x==0) {
-                    int[] l=new int[5];
-                    for(int xx=0;(xx<5);++xx) 
-                        for(int y=YLow;y<YHigh;y++) 
-                            if(p[x+xx+p_img.WidthStep*y]<ConcentrationThreshold)++l[xx];
-                    if((ThresholdHeight>l[0])&&(ThresholdHeight>l[1])&&(ThresholdHeight>l[2])&&(ThresholdHeight>l[3])&&(ThresholdHeight>l[4])) { XLow=0; break; }
-                } else {
-                    int l=0;
-                    for(int y=YLow;y<YHigh;y++) 
-                        if(p[(x+4)+p_img.WidthStep*y]<ConcentrationThreshold)++l;
-                    if(ThresholdHeight>l) { XLow=x-4; break; }
-                }
-            }                
-            XLow=XLow<0?0:XLow;
-            for(int x=p_img.Width-1;x>(XLow+4);--x) {//X右取得
-                if(x==p_img.Width-1) {
-                    int[] l=new int[5];
-                    for(int xx=-4;(xx<1);++xx) 
-                        for(int y=YLow;y<YHigh;y++) 
-                            if(p[(x+xx)+p_img.WidthStep*y]<ConcentrationThreshold)++l[-xx];
-                    if((ThresholdHeight>l[0])&&(ThresholdHeight>l[1])&&(ThresholdHeight>l[2])&&(ThresholdHeight>l[3])&&(ThresholdHeight>l[4])) { XHigh=x; break; }
-                } else {
-                    int l=0;
-                    for(int y=YLow;y<YHigh;y++) 
-                        if(p[(x-4)+p_img.WidthStep*y]<ConcentrationThreshold)++l;
-                    if(ThresholdHeight>l) { XHigh=x+4; break; }
-                }
-            }
-            XHigh=XHigh>=p_img.Width?p_img.Width-1:XHigh;
-        }  /**/ 
         private bool CompareArrayAnd(int Threshold,int[] Array){
             foreach(int Value in Array){
                 if(Threshold>Value)continue;
@@ -143,75 +79,66 @@ namespace asshuku {
         }
         private unsafe int GetYLow(IplImage p_img,byte ConcentrationThreshold,int ThresholdWidth){
             byte* p=(byte*)p_img.ImageData;
-            int[] YLowArray=new int[5];
-            for(int yy = 0;yy<=4;++yy) 
+            int[] TargetRowArray=new int[Var.MaxMarginSize+1];
+            for(int yy = 0;yy<=Var.MaxMarginSize;++yy) 
                 for(int x = 0;x<p_img.Width;x++)
-                    if(p[p_img.WidthStep*yy+x]<ConcentrationThreshold)++YLowArray[yy];
-            if(CompareArrayAnd(ThresholdWidth,YLowArray))return 0;  
-            for(int y=1;y<p_img.Height-4;y++){
-                YLowArray[4]=0;
+                    if(p[p_img.WidthStep*yy+x]<ConcentrationThreshold)++TargetRowArray[yy];
+            if(CompareArrayAnd(ThresholdWidth,TargetRowArray))return 0;  
+            for(int y=1;y<p_img.Height-Var.MaxMarginSize;y++){
+                int TargetRow=0;
                 for(int x = 0;x<p_img.Width;x++)
-                    if(p[p_img.WidthStep*(y+4)+x]<ConcentrationThreshold) ++YLowArray[4];
-                if(ThresholdWidth>YLowArray[4])return y-4<0?0:y-4; 
+                    if(p[p_img.WidthStep*(y+Var.MaxMarginSize)+x]<ConcentrationThreshold) ++TargetRow;
+                if(ThresholdWidth>TargetRow)return y-Var.MaxMarginSize<0?0:y-Var.MaxMarginSize; 
             }
             return 0;//絶対到達しない
         }
         private unsafe int GetYHigh(IplImage p_img,byte ConcentrationThreshold,int ThresholdWidth,int YLow){
             byte* p=(byte*)p_img.ImageData;
-            int[] YHighArray=new int[5];
-            for(int yy=-4;yy<1;++yy) 
+            int[] TargetRowArray=new int[Var.MaxMarginSize+1];
+            for(int yy=-Var.MaxMarginSize;yy<1;++yy) 
                 for(int x=0;x<p_img.Width;++x) 
-                    if(p[p_img.WidthStep*((p_img.Height-1)+yy)+x]<ConcentrationThreshold)++YHighArray[-yy];
-            if(CompareArrayAnd(ThresholdWidth,YHighArray))return p_img.Height-1;  
-            for(int y=p_img.Height-2;y>(YLow+4);--y) {//Y下取得
-                YHighArray[4]=0;
+                    if(p[p_img.WidthStep*((p_img.Height-1)+yy)+x]<ConcentrationThreshold)++TargetRowArray[-yy];
+            if(CompareArrayAnd(ThresholdWidth,TargetRowArray))return p_img.Height-1;  
+            for(int y=p_img.Height-2;y>(YLow+Var.MaxMarginSize);--y) {//Y下取得
+                int TargetRow=0;
                 for(int x=0;x<p_img.Width;++x) 
-                    if(p[p_img.WidthStep*(y-4)+x]<ConcentrationThreshold)++YHighArray[4];
-                if((ThresholdWidth>YHighArray[4]))return y+4>p_img.Height-1?p_img.Height-1:y+4 ; 
+                    if(p[p_img.WidthStep*(y-Var.MaxMarginSize)+x]<ConcentrationThreshold)++TargetRow;
+                if((ThresholdWidth>TargetRow))return y+Var.MaxMarginSize>p_img.Height-1?p_img.Height-1:y+Var.MaxMarginSize; 
             }
             return p_img.Height-1;//絶対到達しない
         }
         private unsafe int GetXLow(IplImage p_img,byte ConcentrationThreshold,int ThresholdHeight,int YLow,int YHigh){
             byte* p=(byte*)p_img.ImageData;
-            int[] XLowArray=new int[5];
-            for(int xx=0;xx<=4;++xx) 
+            int[] TargetRowArray=new int[Var.MaxMarginSize+1];
+            for(int xx=0;xx<=Var.MaxMarginSize;++xx) 
                 for(int y=YLow;y<YHigh;y++) 
-                    if(p[xx+p_img.WidthStep*y]<ConcentrationThreshold)++XLowArray[xx];
-            if(CompareArrayAnd(ThresholdHeight,XLowArray))return 0;  
-            for(int x=0;x<p_img.Width-4;x++) {//X左取得
-                XLowArray[4]=0;
+                    if(p[xx+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRowArray[xx];
+            if(CompareArrayAnd(ThresholdHeight,TargetRowArray))return 0;  
+            for(int x=0;x<p_img.Width-Var.MaxMarginSize;x++) {//X左取得
+                int TargetRow=0;
                 for(int y=YLow;y<YHigh;y++) 
-                    if(p[(x+4)+p_img.WidthStep*y]<ConcentrationThreshold)++XLowArray[4];
-                if(ThresholdHeight>XLowArray[4]) return x-4<0?0:x-4 ; 
+                    if(p[x+Var.MaxMarginSize+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRow;
+                if(ThresholdHeight>TargetRow) return x-Var.MaxMarginSize<0?0:x-Var.MaxMarginSize; 
             }                
             return 0;//絶対到達しない
         }
         private unsafe int GetXHigh(IplImage p_img,byte ConcentrationThreshold,int ThresholdHeight,int YLow,int YHigh,int XLow){
             byte* p=(byte*)p_img.ImageData;
-            int[] XHighArray=new int[5];
-            for(int xx=-4;xx<1;++xx) 
+            int[] TargetRowArray=new int[Var.MaxMarginSize+1];
+            for(int xx=-Var.MaxMarginSize;xx<1;++xx) 
                 for(int y=YLow;y<YHigh;y++) 
-                    if(p[((p_img.Width-1)+xx)+p_img.WidthStep*y]<ConcentrationThreshold)++XHighArray[-xx];
-            if(CompareArrayAnd(ThresholdHeight,XHighArray))return p_img.Width-1; 
+                    if(p[((p_img.Width-1)+xx)+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRowArray[-xx];
+            if(CompareArrayAnd(ThresholdHeight,TargetRowArray))return p_img.Width-1; 
                 
-            for(int x=p_img.Width-2;x>XLow+4;--x) {//X右取得
-                XHighArray[4]=0;
+            for(int x=p_img.Width-2;x>XLow+Var.MaxMarginSize;--x) {//X右取得
+                int TargetRow=0;
                 for(int y=YLow;y<YHigh;y++) 
-                    if(p[(x-4)+p_img.WidthStep*y]<ConcentrationThreshold)++XHighArray[4];
-                if(ThresholdHeight>XHighArray[4])return x+4>p_img.Width-1?p_img.Width-1:x+4 ;  
+                    if(p[x-Var.MaxMarginSize+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRow;
+                if(ThresholdHeight>TargetRow)return x+Var.MaxMarginSize>p_img.Width-1?p_img.Width-1:x+Var.MaxMarginSize ;  
             }
             return p_img.Width-1;
         }
-        /*private void GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold,ref int YLow,ref int XLow,ref int YHigh,ref int XHigh) {
-            int ThresholdWidth = p_img.Width-TimesThreshold;
-            //Y上取得
-            YLow=GetYLow(p_img,ConcentrationThreshold,ThresholdWidth);
-            YHigh=GetYHigh(p_img,ConcentrationThreshold,ThresholdWidth,YLow);
-            
-            int ThresholdHeight = (YHigh-YLow)-TimesThreshold;
-            XLow=GetXLow(p_img,ConcentrationThreshold,ThresholdHeight,YLow,YHigh);
-            XHigh=GetXHigh(p_img,ConcentrationThreshold,ThresholdHeight,YLow,YHigh,XLow);
-        }/* */
+        
         private (int YLow,int XLow,int YHigh,int XHigh) GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold) {
             int ThresholdWidth = p_img.Width-TimesThreshold;
             //Y上取得
@@ -227,7 +154,7 @@ namespace asshuku {
             return StandardAlgorithm.Math.MakeItOdd((int) Math.Sqrt(Math.Sqrt(Image.GetShortSide(p_img)+80)));
         }
         private byte GetConcentrationThreshold(byte ToneValueMax,byte ToneValueMin){
-            return (byte)((ToneValueMax-ToneValueMin)*25/Constants.Tone8Bit);
+            return (byte)((ToneValueMax-ToneValueMin)*25/Const.Tone8Bit);
         }
         private void CutMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
@@ -235,7 +162,7 @@ namespace asshuku {
             Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
 
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.GetSize(), BitDepth.U8, 1);
-            int[] FilterMask=new int[Constants.Neighborhood8];
+            int[] FilterMask=new int[Const.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
                 
                 #if (DEBUG_SAVE)  
@@ -259,7 +186,7 @@ namespace asshuku {
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
                 #endif 
             
-            int[] Histgram=new int[Constants.Tone8Bit];
+            int[] Histgram=new int[Const.Tone8Bit];
             int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
             byte ToneValueMax=Image.GetToneValueMax(Histgram);
             byte ToneValueMin=Image.GetToneValueMin(Histgram);
@@ -383,7 +310,7 @@ namespace asshuku {
                 IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*",System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
                 string[] AllOldFileName=new string[System.IO.Directory.GetFiles(PathName,"*",SearchOption.TopDirectoryOnly).Length];//36*25+100 ファイル数 ゴミ込み
                 int MaxFile=GetFileNameBeforeChange(files,AllOldFileName);
-                if(MaxFile>(36*25)+100) {
+                if(MaxFile>36*25+100) {
                     richTextBox1.Text+="\nMaxFile:"+MaxFile+" => over 1,000";
                     continue;
                 }
@@ -406,7 +333,7 @@ namespace asshuku {
         private void button2_Click(object sender,EventArgs e) {//Folder dialog related.
             FolderBrowserDialog fbd=new FolderBrowserDialog();//Create an instance of the FolderBrowserDialog class
             fbd.Description="Please specify a folder.";//Specify explanatory text to be displayed at the top.
-            fbd.SelectedPath=@"Z:\download\";//Specify the folder to select first // It must be a folder under RootFolder
+            fbd.SelectedPath=@"Z:\download\";//Specify the folder to select first // It must be a folder under RootFolder 
             fbd.ShowNewFolderButton=true;//AlLow users to create new folders
             fbd.ShowDialog(this);//Display a dialog
             richTextBox1.Text=fbd.SelectedPath;//Show path

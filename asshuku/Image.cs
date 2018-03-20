@@ -103,7 +103,7 @@ public class Image{
 
             byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
             for(int y=MaskSize;y<src_img.Height-MaskSize;y++){
-                int[] Bucket=new int[Constants.Tone8Bit];//256tone It is cleared each time
+                int[] Bucket=new int[Const.Tone8Bit];//256tone It is cleared each time
                 for(int x=0;x<n;x++)
                     for(int yy=y-MaskSize;yy<=y+MaskSize;yy++)
                         Bucket[src[yy*src_img.Width+x]]++;
@@ -132,7 +132,7 @@ public class Image{
             for(int y=1;y<src_img.Height-1;++y) {
                 for(int x=1;x<src_img.Width-1;++x) {
                     int offset=(src_img.WidthStep*y)+x;
-                    byte[] temp = new byte[Constants.Neighborhood8];
+                    byte[] temp = new byte[Const.Neighborhood8];
                     temp[0]=(src[offset-src_img.WidthStep-1]);
                     temp[1]=(src[offset-src_img.WidthStep]);
                     temp[2]=(src[offset-src_img.WidthStep+1]);
@@ -160,7 +160,7 @@ public class Image{
         }
         //src_img:入出力
         public static bool ApplyMask(int[] Mask,IplImage src_img){
-            if((Mask.Length!=Constants.Neighborhood8)&&(Mask.Length!=Constants.Neighborhood4))return false;
+            if((Mask.Length!=Const.Neighborhood8)&&(Mask.Length!=Const.Neighborhood4))return false;
             IplImage dst_img = Cv.CreateImage(src_img.GetSize(), BitDepth.U8, 1);
             ApplyMask(Mask,src_img,dst_img);
             Cv.Copy(dst_img,src_img);//dst_img->src_img
@@ -168,14 +168,14 @@ public class Image{
             return true;
         }
         public static unsafe bool ApplyMask(int[] Mask,IplImage src_img,IplImage dst_img){//戻り値
-            if(Mask.Length!=Constants.Neighborhood8&&Mask.Length!=Constants.Neighborhood4)return false;
+            if(Mask.Length!=Const.Neighborhood8&&Mask.Length!=Const.Neighborhood4)return false;
             Cv.Set(dst_img,new CvScalar(0));
             byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
             for(int y=1;y<src_img.Height-1;++y) 
                 for(int x=1;x<src_img.Width-1;++x) {
                     int offset=src_img.WidthStep*y+x;
                     int temp;
-                    if(Mask.Length==Constants.Neighborhood8){
+                    if(Mask.Length==Const.Neighborhood8){
                         temp =(Mask[0]*src[offset-src_img.Width-1]);
                         temp+=(Mask[1]*src[offset-src_img.Width]);
                         temp+=(Mask[2]*src[offset-src_img.Width+1]);
