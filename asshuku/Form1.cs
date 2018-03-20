@@ -56,9 +56,8 @@ namespace asshuku {
         private unsafe void Transform2Linear(ref string f,IplImage p_img,byte min,double magnification) {//内部の空白を除去 グレイスケールのみ
             byte* p=(byte*)p_img.ImageData;
             for(int y=0;y<p_img.Height;++y)
-                for(int x=0;x<p_img.Width;++x){
+                for(int x=0;x<p_img.Width;++x)
                     p[p_img.WidthStep*y+x]=Image.CheckRange2Byte((magnification*(p[p_img.WidthStep*y+x]-min)));//255.99ないと255が254になる
-                }
         }        
         private void PNGOut(IEnumerable<string> files) {
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
@@ -81,7 +80,7 @@ namespace asshuku {
             byte* p=(byte*)p_img.ImageData;
             int[] TargetRowArray=new int[Var.MaxMarginSize+1];
             for(int yy = 0;yy<=Var.MaxMarginSize;++yy) 
-                for(int x = 0;x<p_img.Width;x++)
+                for(int x = 0;x<p_img.Width;++x)
                     if(p[p_img.WidthStep*yy+x]<ConcentrationThreshold)++TargetRowArray[yy];
             if(CompareArrayAnd(ThresholdWidth,TargetRowArray))return 0;  
             for(int y=1;y<p_img.Height-Var.MaxMarginSize;y++){
@@ -111,12 +110,12 @@ namespace asshuku {
             byte* p=(byte*)p_img.ImageData;
             int[] TargetRowArray=new int[Var.MaxMarginSize+1];
             for(int xx=0;xx<=Var.MaxMarginSize;++xx) 
-                for(int y=YLow;y<YHigh;y++) 
+                for(int y=YLow;y<YHigh;++y) 
                     if(p[xx+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRowArray[xx];
             if(CompareArrayAnd(ThresholdHeight,TargetRowArray))return 0;  
             for(int x=0;x<p_img.Width-Var.MaxMarginSize;x++) {//X左取得
                 int TargetRow=0;
-                for(int y=YLow;y<YHigh;y++) 
+                for(int y=YLow;y<YHigh;++y) 
                     if(p[x+Var.MaxMarginSize+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRow;
                 if(ThresholdHeight>TargetRow) return x-Var.MaxMarginSize<0?0:x-Var.MaxMarginSize; 
             }                
@@ -126,19 +125,18 @@ namespace asshuku {
             byte* p=(byte*)p_img.ImageData;
             int[] TargetRowArray=new int[Var.MaxMarginSize+1];
             for(int xx=-Var.MaxMarginSize;xx<1;++xx) 
-                for(int y=YLow;y<YHigh;y++) 
+                for(int y=YLow;y<YHigh;++y) 
                     if(p[((p_img.Width-1)+xx)+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRowArray[-xx];
             if(CompareArrayAnd(ThresholdHeight,TargetRowArray))return p_img.Width-1; 
                 
             for(int x=p_img.Width-2;x>XLow+Var.MaxMarginSize;--x) {//X右取得
                 int TargetRow=0;
-                for(int y=YLow;y<YHigh;y++) 
+                for(int y=YLow;y<YHigh;++y) 
                     if(p[x-Var.MaxMarginSize+p_img.WidthStep*y]<ConcentrationThreshold)++TargetRow;
                 if(ThresholdHeight>TargetRow)return x+Var.MaxMarginSize>p_img.Width-1?p_img.Width-1:x+Var.MaxMarginSize ;  
             }
             return p_img.Width-1;
         }
-        
         private (int YLow,int XLow,int YHigh,int XHigh) GetNewImageSize(IplImage p_img,byte ConcentrationThreshold,int TimesThreshold) {
             int ThresholdWidth = p_img.Width-TimesThreshold;
             //Y上取得
