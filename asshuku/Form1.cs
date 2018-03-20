@@ -29,6 +29,14 @@ namespace asshuku {
             public int Height{get;set;}
             public int Times=1;
         }
+        public class Rect{
+            public int YLow{get;set;}
+            public int XLow{get;set;}
+            public int YHigh{get;set;}
+            public int XHigh{get;set;}
+            public int Width{get;set;}
+            public int Height{get;set;}
+        }
         private void ReNameAlfaBeta(string PathName,ref IEnumerable<string> files,string[] NewFileName) {
             int i=0;
             foreach(string f in files) {
@@ -59,13 +67,7 @@ namespace asshuku {
                 }
             bmp.UnlockBits(data);
             bmp.Dispose();
-        }        
-        /*private unsafe void Transform2Linear(ref string f,IplImage p_img,byte min,double magnification) {//内部の空白を除去 グレイスケールのみ
-            byte* p=(byte*)p_img.ImageData;
-            for(int y=0;y<p_img.Height;++y)
-                for(int x=0;x<p_img.Width;++x)
-                    p[p_img.WidthStep*y+x]=Image.CheckRange2Byte((magnification*(p[p_img.WidthStep*y+x]-min)));//255.99ないと255が254になる
-        }/**/                       
+        }                       
         private void PNGOut(IEnumerable<string> files) {
             System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
             p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
@@ -203,7 +205,6 @@ namespace asshuku {
             }
             Threshold ImageThreshold = new Threshold();
             ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
-            //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue.Max,ImageToneValue.Min);//勾配が重要？
             (int YLow,int XLow,int YHigh,int XHigh)=GetNewImageSize(LaplacianImage,ImageThreshold);
             Cv.ReleaseImage(LaplacianImage);
             writerSync.WriteLine(f+"\n\tthreshold="+ImageThreshold.Concentration+":ImageToneValue.Min="+ImageToneValue.Min+":ImageToneValue.Max="+ImageToneValue.Max+":hi="+YLow+":fu="+XLow+":mi="+YHigh+":yo="+XHigh+"\n\t("+InputGrayImage.Width+","+InputGrayImage.Height+")\n\t("+((XHigh-XLow)+1)+","+((YHigh-YLow)+1)+")");
@@ -211,7 +212,6 @@ namespace asshuku {
             if(Channel==Is.GrayScale){         
                 WhiteCut(InputGrayImage,OutputCutImage,YLow,XLow,YHigh,XHigh);
                 Image.Transform2Linear(OutputCutImage,ImageToneValue);//内部の空白を除去 階調値変換
-                //Transform2Linear(ref f,OutputCutImage,ImageToneValue.Min,255.99/(ImageToneValue.Max-ImageToneValue.Min));//内部の空白を除去 階調値変換
             }else{//Is.Color
                 WhiteCutColor(ref f,OutputCutImage,YLow,XLow,YHigh,XHigh);//bitmapで読まないと4Byteなのか3Byteなのか曖昧なので統一は出来ない
             } 

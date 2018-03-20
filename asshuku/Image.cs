@@ -18,10 +18,10 @@ public class Image{
     public static int GetLongSide(IplImage p_img){
         return p_img.Width>p_img.Height?p_img.Height:p_img.Width;
     }
-    public static byte CheckRange2Byte(int ByteValue){
+    private static byte CheckRange2Byte(int ByteValue){
         return(byte)(ByteValue>255?255:ByteValue<0?0:ByteValue);
     }
-    public static byte CheckRange2Byte(double ByteValue){
+    private static byte CheckRange2Byte(double ByteValue){
         return(byte)(ByteValue>255?255:ByteValue<0?0:ByteValue);
     }
     public static unsafe byte GetToneValueMax(IplImage p_img) {
