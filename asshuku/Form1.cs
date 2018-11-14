@@ -76,7 +76,6 @@ namespace asshuku {
                 app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
                 System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
                 p.WaitForExit();	// プロセスの終了を待つ
-                /* */
             });
         }
         private bool CompareArrayAnd(int ___Threshold___,int[] ___CompareArray___){
@@ -376,17 +375,8 @@ namespace asshuku {
                 IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*",System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
                 string[] AllOldFileName=new string[System.IO.Directory.GetFiles(PathName,"*",SearchOption.TopDirectoryOnly).Length];//36*25+100 ファイル数 ゴミ込み
                 int MaxFile=GetFileNameBeforeChange(files,AllOldFileName);
-                if(MaxFile>36*25+100) {
-                    richTextBox1.Text+="\nMaxFile:"+MaxFile+" => over 1,000";
-                    continue;
-                }else if(MaxFile<1){
-                    richTextBox1.Text+="\nMaxFile:"+MaxFile+" 0";
-                    continue;
-                }
-                richTextBox1.Text+="\nMaxFile:"+MaxFile+":OK.";
-                if(!SortFiles(MaxFile,PathName,AllOldFileName)){
-                    continue;
-                }
+                if(!IsTheNumberOfFilesAppropriate(MaxFile))continue;
+                if(!SortFiles(MaxFile,PathName,AllOldFileName))continue;
                 string[] NewFileName=new string[MaxFile];
                 CreateNewFileName(MaxFile,NewFileName);
                 ReNameAlfaBeta(PathName,ref files,NewFileName);
