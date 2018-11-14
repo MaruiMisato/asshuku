@@ -332,7 +332,7 @@ namespace asshuku {
                 else if(radioButton4.Checked)SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
                 else SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
             }
-            RenameNumberOnlyFile(PathName,Extension);
+            RenameNumberOnlyFile(PathName,Extension); 
         }
         private string GetNumberOnlyPath(string PathName) {//ファイル名からX巻のXのみを返す
             string FileName = System.IO.Path.GetFileName(PathName);//Z:\[宮下英樹] センゴク権兵衛 第05巻 ->[宮下英樹] センゴク権兵衛 第05巻
