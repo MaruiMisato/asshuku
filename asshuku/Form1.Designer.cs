@@ -31,7 +31,7 @@
             this.logs = new System.Windows.Forms.ListBox();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
+            this.BrowserButton = new System.Windows.Forms.Button();
             this.radioButton1 = new System.Windows.Forms.RadioButton();
             this.radioButton2 = new System.Windows.Forms.RadioButton();
             this.radioButton3 = new System.Windows.Forms.RadioButton();
@@ -76,15 +76,15 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // button2
+            // BrowserButton
             // 
-            this.button2.Location = new System.Drawing.Point(277, 1);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(119, 101);
-            this.button2.TabIndex = 13;
-            this.button2.Text = "FolderBrowserDialog";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.BrowserButton.Location = new System.Drawing.Point(277, 1);
+            this.BrowserButton.Name = "BrowserButton";
+            this.BrowserButton.Size = new System.Drawing.Size(119, 101);
+            this.BrowserButton.TabIndex = 13;
+            this.BrowserButton.Text = "FolderBrowserDialog";
+            this.BrowserButton.UseVisualStyleBackColor = true;
+            this.BrowserButton.Click += new System.EventHandler(this.BrowserButtonClick);
             // 
             // radioButton1
             // 
@@ -214,7 +214,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(615, 432);
             this.Controls.Add(this.groupBox3);
-            this.Controls.Add(this.button2);
+            this.Controls.Add(this.BrowserButton);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.button1);
@@ -237,7 +237,7 @@
         private System.Windows.Forms.ListBox logs;
         private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button BrowserButton;
         private System.Windows.Forms.RadioButton radioButton1;
         private System.Windows.Forms.RadioButton radioButton2;
         private System.Windows.Forms.RadioButton radioButton3;

@@ -27,15 +27,13 @@ namespace asshuku {
             public byte Concentration{get;set;}
             public int Width{get;set;}
             public int Height{get;set;}
-            public int Times=1;
+            public int Times{get;}=3;
         }
         public class Rect{
             public int YLow{get;set;}
             public int XLow{get;set;}
             public int YHigh{get;set;}
             public int XHigh{get;set;}
-            //public int Width{get;set;}
-            //public int Height{get;set;}
             public CvSize Size=new CvSize();
         }
         private void ReNameAlfaBeta(string PathName,ref IEnumerable<string> files,string[] NewFileName) {
@@ -69,15 +67,17 @@ namespace asshuku {
             bmp.UnlockBits(data);
             bmp.Dispose();
         }                       
-        private void PNGOut(IEnumerable<string> files) {
-            System.Diagnostics.Process p=new System.Diagnostics.Process();//Create a Process object
-            p.StartInfo.FileName=System.Environment.GetEnvironmentVariable("ComSpec");//ComSpec(cmd.exe)のパスを取得して、FileNameプロパティに指定
-            p.StartInfo.WindowStyle=System.Diagnostics.ProcessWindowStyle.Hidden;//HiddenMaximizedMinimizedNormal
-            Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {
-                p.StartInfo.Arguments="/c pngout "+f;//By default, PNGOUT will not overwrite a PNG file if it was not able to compress it further.
-                p.Start();p.WaitForExit();//起動
+        private void PNGOut2(IEnumerable<string> files) {
+            Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=8 },f => {
+                var app = new System.Diagnostics.ProcessStartInfo();
+                app.FileName = "pngout.exe";
+                app.Arguments = "\""+f+"\"";
+                app.UseShellExecute = false;
+                app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
+                System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
+                p.WaitForExit();	// プロセスの終了を待つ
+                /* */
             });
-            p.Close();
         }
         private bool CompareArrayAnd(int ___Threshold___,int[] ___CompareArray___){
             foreach(int ___CompareValue___ in ___CompareArray___){
@@ -234,13 +234,17 @@ namespace asshuku {
             Threshold ImageThreshold = new Threshold();
             ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
             Rect NewImageRect=new Rect();
-            if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect))return false;
+            if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect)){
+                Cv.ReleaseImage(InputGrayImage);
+                Cv.ReleaseImage(LaplacianImage);
+                return false;
+            }
             Cv.ReleaseImage(LaplacianImage);
             writerSync.WriteLine(f+"\n\tthreshold="+ImageThreshold.Concentration+":ToneValueMin="+ImageToneValue.Min+":ToneValueMax="+ImageToneValue.Max+":hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n\t("+InputGrayImage.Width+","+InputGrayImage.Height+")\n\t("+NewImageRect.Size.Width+","+NewImageRect.Size.Height+")");//prb
             IplImage OutputCutImage=Cv.CreateImage(NewImageRect.Size,BitDepth.U8,Channel);//prb
             if(Channel==Is.GrayScale){         
                 WhiteCut(InputGrayImage,OutputCutImage,NewImageRect);
-                Image.Transform2Linear(OutputCutImage,ImageToneValue);//内部の空白を除去 階調値変換
+                Image.Transform2Linear(OutputCutImage,ImageToneValue);// 階調値変換
             }else{//Is.Color
                 WhiteCutColor(ref f,OutputCutImage,NewImageRect);//bitmapで読まないと4Byteなのか3Byteなのか曖昧なので統一は出来ない
             } 
@@ -261,38 +265,50 @@ namespace asshuku {
             }
             sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Restart();
-            //PNGOut(files);//PNGOptimize
+            PNGOut2(files);//PNGOptimize
             sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
         }
         private int GetFileNameBeforeChange(IEnumerable<string> files,string[] AllOldFileName) {
-            int MaxFile=0;
+            int MaxFile=-1;
             foreach(string f in files) {
                 FileInfo file=new FileInfo(f);
                 if(file.Extension==".db"||file.Extension==".ini") file.Delete();//Disposal of garbage
-                else AllOldFileName[MaxFile++]=f;
+                else AllOldFileName[++MaxFile]=f;
             }
-            return MaxFile;
+            return ++MaxFile;
         }
-        private void SortFiles(int MaxFile,string PathName,string[] AllOldFileName) {
-            for(int i=MaxFile-1;i>=0;--i) {//尻からリネーム
+        /*
+        (file.Name.Length-file.Extension.Length)拡張子を除いたファイル名長さ
+        ファイル名のサイズを三桁以上にして先頭にzを付加
+        ファイル名に重複がある場合どうにもならないのでfalseを返す
+         */
+        private bool SortFiles(int MaxFile,string PathName,string[] AllOldFileName) {
+            for(int i=MaxFile-1;i>=0;--i) {//尻からリネームしないと終わらない?
                 FileInfo file=new FileInfo(AllOldFileName[i]);
-                while((file.Name.Length-file.Extension.Length)<3) file.MoveTo((PathName+"/0"+file.Name));//0->000  1000枚までしか無理 7zは650枚
+                while((file.Name.Length-file.Extension.Length)<3) 
+                    if(System.IO.File.Exists(PathName+"/0"+file.Name)){//重複
+                        richTextBox1.Text+="\n:"+PathName+"/0"+file.Name+":Exists";
+                        return false;
+                    }
+                    else file.MoveTo((PathName+"/0"+file.Name));//0->000  1000枚までしか無理 7zは650枚
                 if((file.Name[0]!='z')) file.MoveTo((PathName+"/z"+file.Name));//000->z000
             }
+            return true;
         }
         private void CreateNewFileName(int MaxFile,string[] NewFileName) {
             if(radioButton2.Checked&&MaxFile<=26*25) {//7zip under 26*25=650
                 int MaxRoot=(int)Math.Sqrt(MaxFile)+1;
                 richTextBox1.Text+="\nroot MaxRoot"+MaxRoot;
                 for(int i=0;i<NewFileName.Length;++i) NewFileName[i]=(char)((i/MaxRoot)+'a')+((char)(i%MaxRoot+'a')).ToString();//26*25  36*35mezasu
-            } else if(MaxFile<35) {//一桁で1-y
-                for(int i=0;(i<NewFileName.Length)&&(i<10);++i) NewFileName[i]=i.ToString();//0 ~ 9
-                for(int i=10;i<NewFileName.Length;++i) NewFileName[i]=((char)((i-10)+'a')).ToString();//a~y
+            } else if(MaxFile<35) {//一桁で1-9,a-y
+                for(int i=0;i<NewFileName.Length&&i<10;++i)NewFileName[i]=i.ToString();//0 ~ 9
+                for(int i=10;i<NewFileName.Length;++i)NewFileName[i]=((char)((i-10)+'a')).ToString();//a~y
             } else {//zip under 36*25+100=1000
+                for(int i=0;(i<NewFileName.Length)&&(i<100);++i)NewFileName[i]=i.ToString();//0 ~ 99 zipではこの法が軽い
+                if(MaxFile<100)return;
                 char[] y1=new char[36];
-                for(int i=0;i<10;++i) y1[i]=(char)(i+'0');//0 ~ 9
-                for(int i=10;i<y1.Length;++i) y1[i]=(char)(i-10+'a');//a~y
-                for(int i=0;(i<NewFileName.Length)&&(i<100);++i) NewFileName[i]=i.ToString();//0 ~ 99 zipではこの法が軽い
+                for(int i=0;i<10;++i)y1[i]=(char)(i+'0');//0 ~ 9
+                for(int i=10;i<y1.Length;++i)y1[i]=(char)(i-10+'a');//a~y
                 for(int i=100;i<NewFileName.Length;++i) NewFileName[i]+=(char)(((i-100)/36)+'a')+(y1[(i-100)%36]).ToString();
             }
         }
@@ -300,7 +316,7 @@ namespace asshuku {
             string Extension="zip";
             if(radioButton3.Checked) {//Ionic.Zip
                 Ionic.Zip.ZipFile zip=new Ionic.Zip.ZipFile();//Create a ZIP archive
-                if(radioButton4.Checked) zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Level9;//max
+                if(radioButton4.Checked)    zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Level9;//max
                 else if(radioButton5.Checked) zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Default;//Default
                 else zip.CompressionLevel=Ionic.Zlib.CompressionLevel.None;
                 foreach(string f in files) {
@@ -319,13 +335,13 @@ namespace asshuku {
             }
             RenameNumberOnlyFile(PathName,Extension);
         }
-        private string GetNumberOnlyPath(string PathName) {
+        private string GetNumberOnlyPath(string PathName) {//ファイル名からX巻のXのみを返す
             string FileName = System.IO.Path.GetFileName(PathName);//Z:\[宮下英樹] センゴク権兵衛 第05巻 ->[宮下英樹] センゴク権兵衛 第05巻
             Match MatchedNumber = Regex.Match(FileName,"(\\d)+巻");//[宮下英樹] センゴク権兵衛 第05巻 ->05巻
             if(MatchedNumber.Success)
                 MatchedNumber = Regex.Match(MatchedNumber.Value,"(\\d)+");//05巻->05
             else{
-                MatchedNumber=Regex.Match(FileName,"(\\d)+");//[宮下英樹] センゴク権兵衛 第05 ->05   7zの挙動が怪しい
+                MatchedNumber=Regex.Match(FileName,"(\\d)+");//[宮下英樹] センゴク権兵衛 第05 ->05   
                 if(!MatchedNumber.Success)
                     return PathName;//[宮下英樹] センゴク権兵衛 第 ->
             }
@@ -341,6 +357,18 @@ namespace asshuku {
                 richTextBox1.Text+=NewFileName+"\n";//Show path
                 return true;
         }
+        private bool IsTheNumberOfFilesAppropriate(int MaxFile){
+            if(MaxFile>36*25+100) {
+                richTextBox1.Text+="\nMaxFile:"+MaxFile+" => over 1,000";
+                return false;
+            }else if(MaxFile<1){
+                richTextBox1.Text+="\nMaxFile:"+MaxFile+" 0";
+                return false;
+            }else{
+                richTextBox1.Text+="\nMaxFile:"+MaxFile+":OK.";
+                return true;
+            }
+        }
         private void FileProcessing(System.Collections.Specialized.StringCollection filespath){
             foreach(string PathName in filespath) {//Enumerate acquired paths
                 logs.Items.Add(PathName);
@@ -351,9 +379,14 @@ namespace asshuku {
                 if(MaxFile>36*25+100) {
                     richTextBox1.Text+="\nMaxFile:"+MaxFile+" => over 1,000";
                     continue;
+                }else if(MaxFile<1){
+                    richTextBox1.Text+="\nMaxFile:"+MaxFile+" 0";
+                    continue;
                 }
-                richTextBox1.Text+="\nMaxFile:"+MaxFile;
-                SortFiles(MaxFile,PathName,AllOldFileName);
+                richTextBox1.Text+="\nMaxFile:"+MaxFile+":OK.";
+                if(!SortFiles(MaxFile,PathName,AllOldFileName)){
+                    continue;
+                }
                 string[] NewFileName=new string[MaxFile];
                 CreateNewFileName(MaxFile,NewFileName);
                 ReNameAlfaBeta(PathName,ref files,NewFileName);
@@ -362,13 +395,13 @@ namespace asshuku {
             }
         }
         private void button1_Click(object sender,EventArgs e) {
-            if(!Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data. 取得できなかったときはnull listBox1.Items.Clear();
+            if(!Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data. 
                 MessageBox.Show("Please select folders.");
                 return;
             } 
             FileProcessing(Clipboard.GetFileDropList());
         }
-        private void button2_Click(object sender,EventArgs e) {//Folder dialog related.
+        private void BrowserButtonClick(object sender,EventArgs e) {//Folder dialog related.
             FolderBrowserDialog fbd=new FolderBrowserDialog();//Create an instance of the FolderBrowserDialog class
             fbd.Description="Please specify a folder.";//Specify explanatory text to be displayed at the top.
             fbd.SelectedPath=@"Z:\download\";//Specify the folder to select first // It must be a folder under RootFolder 

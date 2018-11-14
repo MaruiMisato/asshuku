@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace asshuku {
+
+    
     static class Program {
         /// <summary>
         /// アプリケーションのメイン エントリ ポイントです。
