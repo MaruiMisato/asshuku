@@ -317,9 +317,16 @@ namespace asshuku {
                 Extension="rar";
                 var PythonApp = new System.Diagnostics.ProcessStartInfo();
                 PythonApp.FileName = "Rar.exe";
-                PythonApp.Arguments = " a "+PathName+".rar -rr5 -mt8 -m5 -ep " + PathName;
-                PythonApp.Arguments = " a "+PathName+".rar -mt8 -m5 -ep " + PathName;
-
+                if(radioButton6.Checked)//non compress
+                    PythonApp.Arguments = " a "+PathName+".rar -rr5 -mt8 -m0 -ep " + PathName;
+                else//compress level max
+                    PythonApp.Arguments = " a "+PathName+".rar -rr5 -mt8 -m5 -ep " + PathName;
+                /*
+  m<0..5>       圧縮方式を指定 (0-無圧縮...3-標準...5-最高圧縮)
+  rr[N]         リカバリレコードを付加
+  a             書庫にファイルを圧縮
+  mt<threads>   スレッドの数をセット
+  ep            名前からパスを除外/**/
                 PythonApp.UseShellExecute = false;
                 PythonApp.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
                 System.Diagnostics.Process PythonProcess = System.Diagnostics.Process.Start(PythonApp);
