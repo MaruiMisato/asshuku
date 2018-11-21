@@ -89,7 +89,6 @@
             // radioButton1
             // 
             this.radioButton1.AutoSize = true;
-            this.radioButton1.Checked = true;
             this.radioButton1.Location = new System.Drawing.Point(6, 18);
             this.radioButton1.Name = "radioButton1";
             this.radioButton1.Size = new System.Drawing.Size(101, 16);
@@ -110,12 +109,13 @@
             // 
             // radioButton3
             // 
+            this.radioButton3.Checked = true;
             this.radioButton3.AutoSize = true;
             this.radioButton3.Location = new System.Drawing.Point(6, 74);
             this.radioButton3.Name = "radioButton3";
             this.radioButton3.Size = new System.Drawing.Size(105, 16);
             this.radioButton3.TabIndex = 9;
-            this.radioButton3.Text = "zip (Ionic.Zip.dll)";
+            this.radioButton3.Text = "rar (WinRAR 5.3.1)";
             this.radioButton3.UseVisualStyleBackColor = true;
             // 
             // radioButton4

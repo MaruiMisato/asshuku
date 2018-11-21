@@ -318,6 +318,7 @@ namespace asshuku {
                 var PythonApp = new System.Diagnostics.ProcessStartInfo();
                 PythonApp.FileName = "Rar.exe";
                 PythonApp.Arguments = " a "+PathName+".rar -rr5 -mt8 -m5 -ep " + PathName;
+                PythonApp.Arguments = " a "+PathName+".rar -mt8 -m5 -ep " + PathName;
 
                 PythonApp.UseShellExecute = false;
                 PythonApp.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
