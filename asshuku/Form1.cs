@@ -313,16 +313,16 @@ namespace asshuku {
         }
         private void CreateZip(string PathName,IEnumerable<string> files) {
             string Extension="zip";
-            if(radioButton3.Checked) {//Ionic.Zip
-                Ionic.Zip.ZipFile zip=new Ionic.Zip.ZipFile();//Create a ZIP archive
-                if(radioButton4.Checked)    zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Level9;//max
-                else if(radioButton5.Checked) zip.CompressionLevel=Ionic.Zlib.CompressionLevel.Default;//Default
-                else zip.CompressionLevel=Ionic.Zlib.CompressionLevel.None;
-                foreach(string f in files) {
-                    ZipEntry entry=zip.AddFile(f);//Add a file
-                    entry.FileName=new FileInfo(f).Name;
-                } 
-                zip.Save(PathName+"."+Extension);//Create a ZIP archive
+            if(radioButton3.Checked) {//winrar
+                Extension="rar";
+                var PythonApp = new System.Diagnostics.ProcessStartInfo();
+                PythonApp.FileName = "Rar.exe";
+                PythonApp.Arguments = " a "+PathName+".rar -rr5 -mt8 -m5 -ep " + PathName;
+
+                PythonApp.UseShellExecute = false;
+                PythonApp.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
+                System.Diagnostics.Process PythonProcess = System.Diagnostics.Process.Start(PythonApp);
+                PythonProcess.WaitForExit();	// プロセスの終了を待つ
             } else {
                 if(radioButton2.Checked) Extension="7z";
                 StringBuilder strShortPath=new StringBuilder(1024);
