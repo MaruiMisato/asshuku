@@ -252,12 +252,12 @@ namespace asshuku {
             Cv.ReleaseImage(OutputCutImage);
             return true;
         }
-        private void RemovePNGMarginEntry(string PathName) {
-            IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+        private void RemoveMarginEntry(string PathName) {
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();//stop watch get time
             sw.Start();
             using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
-                Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+                Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
                     CutMarginMain(ref f,writerSync);
                 });
                 writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
@@ -483,7 +483,9 @@ namespace asshuku {
                 string[] NewFileName=new string[MaxFile];
                 CreateNewFileName(MaxFile,NewFileName);
                 ReNameAlfaBeta(PathName,ref files,NewFileName);
-                if(radioButton7.Checked) RemovePNGMarginEntry(PathName);
+                if(radioButton7.Checked){
+                    RemoveMarginEntry(PathName);
+                }
                 CarmineCliAuto(PathName);
                 CreateZip(PathName,files);
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
