@@ -154,7 +154,7 @@
             // 
             this.radioButton7.AutoSize = true;
             this.radioButton7.Checked = true;
-            this.radioButton7.Location = new System.Drawing.Point(6, 18);
+            this.radioButton7.Location = new System.Drawing.Point(6, 30);
             this.radioButton7.Name = "radioButton7";
             this.radioButton7.Size = new System.Drawing.Size(64, 16);
             this.radioButton7.TabIndex = 0;
@@ -165,7 +165,7 @@
             // radioButton8
             // 
             this.radioButton8.AutoSize = true;
-            this.radioButton8.Location = new System.Drawing.Point(6, 40);
+            this.radioButton8.Location = new System.Drawing.Point(6, 50);
             this.radioButton8.Name = "radioButton8";
             this.radioButton8.Size = new System.Drawing.Size(49, 16);
             this.radioButton8.TabIndex = 1;
@@ -206,7 +206,7 @@
             this.groupBox3.Size = new System.Drawing.Size(102, 101);
             this.groupBox3.TabIndex = 14;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "PNGOptimize";
+            this.groupBox3.Text = "MarginRemove + PNGOptimize";
             // 
             // Form1
             // 

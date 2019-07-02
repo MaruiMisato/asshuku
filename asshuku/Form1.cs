@@ -190,7 +190,7 @@ namespace asshuku {
         private byte GetConcentrationThreshold(ToneValue ImageToneValue){
             return (byte)((ImageToneValue.Max-ImageToneValue.Min)*25/Const.Tone8Bit);
         }
-        private bool CutMarginMain(ref string f,TextWriter writerSync){
+        private bool CutPNGMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
@@ -252,20 +252,68 @@ namespace asshuku {
             Cv.ReleaseImage(OutputCutImage);
             return true;
         }
+        private bool CutJPGMarginMain(ref string f,TextWriter writerSync){
+            IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
+            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
+            IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
+            int[] FilterMask=new int[Const.Neighborhood8];
+            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
+            Cv.ReleaseImage(MedianImage);
+            Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
+            int[] Histgram=new int[Const.Tone8Bit];
+            int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
+            ToneValue ImageToneValue = new ToneValue();
+            ImageToneValue.Max=Image.GetToneValueMax(Histgram);
+            ImageToneValue.Min=Image.GetToneValueMin(Histgram);
+            if(ImageToneValue.Max==ImageToneValue.Min){
+                Cv.ReleaseImage(InputGrayImage);
+                Cv.ReleaseImage(LaplacianImage);
+                return false;
+            }
+            Threshold ImageThreshold = new Threshold();
+            ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
+            Rect NewImageRect=new Rect();
+            if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect)){
+                Cv.ReleaseImage(InputGrayImage);
+                Cv.ReleaseImage(LaplacianImage);
+                return false;
+            }
+            Cv.ReleaseImage(LaplacianImage);
+            writerSync.WriteLine(f+"\n\tthreshold="+ImageThreshold.Concentration+":ToneValueMin="+ImageToneValue.Min+":ToneValueMax="+ImageToneValue.Max+":hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n\t("+InputGrayImage.Width+","+InputGrayImage.Height+")\n\t("+NewImageRect.Size.Width+","+NewImageRect.Size.Height+")");//prb
+                var app = new System.Diagnostics.ProcessStartInfo();
+                app.FileName = "jpegtran.exe";//jpegtran.exe-crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
+                app.Arguments = "-crop "+NewImageRect.Size.Width+"x"+NewImageRect.Size.Height+"+"+NewImageRect.XLow+"+"+NewImageRect.YLow+" -outfile \""+f+"\" \""+f+"\"";
+                app.UseShellExecute = false;
+                app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
+                System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
+                p.WaitForExit();	// プロセスの終了を待つ
+            Cv.ReleaseImage(InputGrayImage);
+            return true;
+        }
         private void RemoveMarginEntry(string PathName) {
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();//stop watch get time
             sw.Start();
             using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
                 IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
                 Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                    CutMarginMain(ref f,writerSync);
+                    CutPNGMarginMain(ref f,writerSync);
                 });
                 writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                sw.Stop();richTextBox1.Text+=("\nPNGWhiteRemove:"+sw.Elapsed);
+                sw.Restart();
+                PNGOut2(files);//PNGOptimize
+                sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
             }
-            sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
             sw.Restart();
-            PNGOut2(files);//PNGOptimize
-            sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+            using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
+                IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.jpg",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+                Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                    CutJPGMarginMain(ref f,writerSync);
+                });
+                writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                sw.Stop();richTextBox1.Text+=("\nJPGWhiteRemove:"+sw.Elapsed+"\n");
+            }
         }
         private int GetFileNameBeforeChange(IEnumerable<string> files,string[] AllOldFileName) {
             int MaxFile=-1;
