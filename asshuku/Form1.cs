@@ -279,16 +279,16 @@ namespace asshuku {
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
-            Cv.ReleaseImage(LaplacianImage);
-            writerSync.WriteLine(f+"\n\tthreshold="+ImageThreshold.Concentration+":ToneValueMin="+ImageToneValue.Min+":ToneValueMax="+ImageToneValue.Max+":hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n\t("+InputGrayImage.Width+","+InputGrayImage.Height+")\n\t("+NewImageRect.Size.Width+","+NewImageRect.Size.Height+")");//prb
-                var app = new System.Diagnostics.ProcessStartInfo();
-                app.FileName = "jpegtran.exe";//jpegtran.exe-crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
-                app.Arguments = "-crop "+NewImageRect.Size.Width+"x"+NewImageRect.Size.Height+"+"+NewImageRect.XLow+"+"+NewImageRect.YLow+" -outfile \""+f+"\" \""+f+"\"";
-                app.UseShellExecute = false;
-                app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
-                p.WaitForExit();	// プロセスの終了を待つ
+            writerSync.WriteLine(f+"\n"+"hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n("+InputGrayImage.Width+","+InputGrayImage.Height+")\n("+NewImageRect.Size.Width+","+NewImageRect.Size.Height+")");//prb
             Cv.ReleaseImage(InputGrayImage);
+            Cv.ReleaseImage(LaplacianImage);
+            var app = new System.Diagnostics.ProcessStartInfo();
+            app.FileName = "jpegtran.exe";//jpegtran.exe-crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
+            app.Arguments = "-crop "+NewImageRect.Size.Width+"x"+NewImageRect.Size.Height+"+"+NewImageRect.XLow+"+"+NewImageRect.YLow+" -outfile \""+f+"\" \""+f+"\"";
+            app.UseShellExecute = false;
+            app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
+            System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
+            p.WaitForExit();	// プロセスの終了を待つ
             return true;
         }
         private void RemoveMarginEntry(string PathName) {
