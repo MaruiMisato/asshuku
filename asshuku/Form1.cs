@@ -458,9 +458,9 @@ namespace asshuku {
         }
 
         private void CreateZip(string PathName) {
-            string Extension="zip";
+            string Extension=".zip";
             if(radioButton3.Checked) {//winrar
-                Extension="rar";
+                Extension=".rar";
                 var App = new System.Diagnostics.ProcessStartInfo();
                 App.FileName = "Rar.exe";
                 if(radioButton6.Checked)//non compress
@@ -479,13 +479,20 @@ namespace asshuku {
                 System.Diagnostics.Process AppProcess = System.Diagnostics.Process.Start(App);
                 AppProcess.WaitForExit();	// プロセスの終了を待つ
             } else {
-                if(radioButton2.Checked) Extension="7z";
-                StringBuilder strShortPath=new StringBuilder(1024);
-                GetShortPathName(PathName,strShortPath,1024);                
-                richTextBox1.Text+="\n"+PathName+"."+Extension+"\n";
-                if(radioButton5.Checked)SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
-                else if(radioButton4.Checked)SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
-                else SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
+                if(radioButton2.Checked) Extension=".7z";
+                var App = new System.Diagnostics.ProcessStartInfo();
+                App.FileName = "7z.exe";
+                if(radioButton5.Checked)
+                    App.Arguments = " a \""+PathName+Extension+"\" -mmt=on" + " \""+PathName+"\\*\" ";
+                else if(radioButton4.Checked)
+                    App.Arguments = " a \""+PathName+Extension+"\" -mmt=on -mx9" + " \""+PathName+"\\*\" ";
+                else
+                    App.Arguments = " a \""+PathName+Extension+"\" -mmt=on -mx0" + " \""+PathName+"\\*\" ";
+                App.UseShellExecute = false;
+                App.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
+                //MessageBox.Show(App.Arguments);
+                System.Diagnostics.Process AppProcess = System.Diagnostics.Process.Start(App);
+                AppProcess.WaitForExit();	// プロセスの終了を待つ
             }
             RenameNumberOnlyFile(PathName,Extension); 
         }
@@ -503,10 +510,10 @@ namespace asshuku {
             return PathName.Replace(FileName,int.Parse(MatchedNumber.Value).ToString());//Z:\5
         }
         private bool RenameNumberOnlyFile(string PathName,string Extension) {
-                string NewFileName=GetNumberOnlyPath(PathName)+"."+Extension;
+                string NewFileName=GetNumberOnlyPath(PathName)+Extension;
                 if (System.IO.File.Exists(NewFileName))//重複
                     return false;
-                FileInfo file=new FileInfo(PathName+"."+Extension);
+                FileInfo file=new FileInfo(PathName+Extension);
                 file.MoveTo(NewFileName);
                 richTextBox1.Text+=NewFileName+"\n";//Show path
                 return true;
