@@ -456,7 +456,15 @@ namespace asshuku {
                 return;
             System.IO.Directory.Delete(PathName+"\\result_carmine",true);
         }
-
+        private void ExecuteAnotherApp(string FileName,string Arguments,bool UseShellExecute,bool CreateNoWindow){
+            var App = new System.Diagnostics.ProcessStartInfo();
+            App.FileName = FileName;
+            App.Arguments = Arguments;
+            App.UseShellExecute = UseShellExecute;
+            App.CreateNoWindow = CreateNoWindow;    // コンソール・ウィンドウを開
+            System.Diagnostics.Process AppProcess = System.Diagnostics.Process.Start(App);
+            AppProcess.WaitForExit();	// プロセスの終了を待つ
+        }
         private void CreateZip(string PathName) {
             string Extension=".zip";
             if(radioButton3.Checked) {//winrar
@@ -464,9 +472,9 @@ namespace asshuku {
                 var App = new System.Diagnostics.ProcessStartInfo();
                 App.FileName = "Rar.exe";
                 if(radioButton6.Checked)//non compress
-                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m0 -ep " + " \""+PathName+"\" ";
+                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m0 -ep \""+PathName+"\"";
                 else//compress level max
-                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m5 -ep " + " \""+PathName+"\" ";
+                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m5 -ep \""+PathName+"\"";
                 //MessageBox.Show(App.Arguments);
                 /*
   a             書庫にファイルを圧縮
@@ -483,11 +491,11 @@ namespace asshuku {
                 var App = new System.Diagnostics.ProcessStartInfo();
                 App.FileName = "7z.exe";
                 if(radioButton5.Checked)
-                    App.Arguments = " a \""+PathName+Extension+"\" -mmt=on" + " \""+PathName+"\\*\" ";
+                    App.Arguments = "a \""+PathName+Extension+"\" -mmt=on \""+PathName+"\\*\"";
                 else if(radioButton4.Checked)
-                    App.Arguments = " a \""+PathName+Extension+"\" -mmt=on -mx9" + " \""+PathName+"\\*\" ";
+                    App.Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx9 \""+PathName+"\\*\"";
                 else
-                    App.Arguments = " a \""+PathName+Extension+"\" -mmt=on -mx0" + " \""+PathName+"\\*\" ";
+                    App.Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx0 \""+PathName+"\\*\"";
                 App.UseShellExecute = false;
                 App.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
                 //MessageBox.Show(App.Arguments);
