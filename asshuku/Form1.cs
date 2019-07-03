@@ -69,13 +69,7 @@ namespace asshuku {
         }                       
         private void PNGOut2(IEnumerable<string> files) {
             Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {
-                var app = new System.Diagnostics.ProcessStartInfo();
-                app.FileName = "pngout.exe";
-                app.Arguments = "\""+f+"\"";
-                app.UseShellExecute = false;
-                app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
-                p.WaitForExit();	// プロセスの終了を待つ
+                ExecuteAnotherApp("pngout.exe","\""+f+"\"",false,true);
             });
         }
         private bool CompareArrayAnd(int ___Threshold___,int[] ___CompareArray___){
@@ -282,13 +276,9 @@ namespace asshuku {
             writerSync.WriteLine(f+"\n"+"hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n("+InputGrayImage.Width+","+InputGrayImage.Height+")\n("+NewImageRect.Size.Width+","+NewImageRect.Size.Height+")");//prb
             Cv.ReleaseImage(InputGrayImage);
             Cv.ReleaseImage(LaplacianImage);
-            var app = new System.Diagnostics.ProcessStartInfo();
-            app.FileName = "jpegtran.exe";//jpegtran.exe-crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
-            app.Arguments = "-crop "+NewImageRect.Size.Width+"x"+NewImageRect.Size.Height+"+"+NewImageRect.XLow+"+"+NewImageRect.YLow+" -outfile \""+f+"\" \""+f+"\"";
-            app.UseShellExecute = false;
-            app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-            System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
-            p.WaitForExit();	// プロセスの終了を待つ
+            //jpegtran.exe -crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
+            string Arguments = "-crop "+NewImageRect.Size.Width+"x"+NewImageRect.Size.Height+"+"+NewImageRect.XLow+"+"+NewImageRect.YLow+" -outfile \""+f+"\" \""+f+"\"";
+            ExecuteAnotherApp("jpegtran.exe",Arguments,false,true);
             return true;
         }
         private void RemoveMarginEntry(string PathName) {
@@ -442,14 +432,10 @@ namespace asshuku {
         }
         private void CarmineCliAuto(string PathName) {//ハフマンテーブルの最適化によってjpgサイズを縮小
             IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.jpg",System.IO.SearchOption.AllDirectories);//Acquire only jpg files under the path.
+            if(!files.Any())
+                return;
             Parallel.ForEach(files,new ParallelOptions() {MaxDegreeOfParallelism=16},f=>{//マルチスレッド化するのでファイル毎
-                var app = new System.Diagnostics.ProcessStartInfo();
-                app.FileName = "carmine_cli.exe";
-                app.Arguments = "\""+f+"\"";
-                app.UseShellExecute = false;
-                app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
-                p.WaitForExit();	// プロセスの終了を待つ
+                ExecuteAnotherApp("carmine_cli.exe","\""+f+"\"",false,true);
             });
             MoveAllFileFolder(PathName+"\\result_carmine",PathName,true);// フォルダ内の上書き複写
             if(!System.IO.Directory.Exists(PathName+"\\result_carmine"))
@@ -467,10 +453,9 @@ namespace asshuku {
         }
         private void CreateZip(string PathName) {
             string Extension=".zip";
+            string FileName = "Rar.exe";
             string Arguments;
-            string FileName;
             if(radioButton3.Checked) {//winrar
-                FileName = "Rar.exe";
                 Extension=".rar";
                 if(radioButton6.Checked)//non compress
                     Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m0 -ep \""+PathName+"\"";
@@ -513,8 +498,7 @@ namespace asshuku {
                 string NewFileName=GetNumberOnlyPath(PathName)+Extension;
                 if (System.IO.File.Exists(NewFileName))//重複
                     return false;
-                FileInfo file=new FileInfo(PathName+Extension);
-                file.MoveTo(NewFileName);
+                File.Move(PathName+Extension,NewFileName);
                 richTextBox1.Text+=NewFileName+"\n";//Show path
                 return true;
         }
