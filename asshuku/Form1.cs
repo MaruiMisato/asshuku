@@ -62,11 +62,6 @@ namespace asshuku {
                 }
             bmp.UnlockBits(data);
             bmp.Dispose();
-        }                       
-        private void PNGOut2(IEnumerable<string> files) {
-            Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {
-                ExecuteAnotherApp("pngout.exe","\""+f+"\"",false,true);
-            });
         }
         private bool CompareArrayAnd(int ___Threshold___,int[] ___CompareArray___){
             foreach(int ___CompareValue___ in ___CompareArray___){
@@ -289,7 +284,9 @@ namespace asshuku {
                     writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
                     sw.Stop();richTextBox1.Text+=("\nPNGWhiteRemove:"+sw.Elapsed);
                     sw.Restart();
-                    PNGOut2(PNGFiles);//PNGOptimize
+                    Parallel.ForEach(PNGFiles,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {
+                        ExecuteAnotherApp("pngout.exe","\""+f+"\"",false,true);//PNGOptimize
+                    });
                     sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
                 }
             }
