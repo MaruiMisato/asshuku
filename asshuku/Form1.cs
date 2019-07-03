@@ -11,7 +11,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Text.RegularExpressions;//正規表現
 using System.Runtime.InteropServices;
-using Ionic.Zip;
+using System.Linq;
 using OpenCvSharp;
 using static Image;
 namespace asshuku {    
@@ -293,29 +293,33 @@ namespace asshuku {
         }
         private void RemoveMarginEntry(string PathName) {
             System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();//stop watch get time
+            IEnumerable<string> PNGFiles=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
             sw.Start();
-            using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
-                IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
-                Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                    CutPNGMarginMain(ref f,writerSync);
-                });
-                writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
-                sw.Stop();richTextBox1.Text+=("\nPNGWhiteRemove:"+sw.Elapsed);
-                sw.Restart();
-                PNGOut2(files);//PNGOptimize
-                sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+            if(PNGFiles.Any()){
+                using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
+                    Parallel.ForEach(PNGFiles,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                        CutPNGMarginMain(ref f,writerSync);
+                    });
+                    writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                    sw.Stop();richTextBox1.Text+=("\nPNGWhiteRemove:"+sw.Elapsed);
+                    sw.Restart();
+                    PNGOut2(PNGFiles);//PNGOptimize
+                    sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+                }
             }
-            sw.Restart();
-            using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
-                IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.jpg",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
-                Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                    CutJPGMarginMain(ref f,writerSync);
-                });
-                writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
-                sw.Stop();richTextBox1.Text+=("\nJPGWhiteRemove:"+sw.Elapsed+"\n");
+            IEnumerable<string> JPGFiles=System.IO.Directory.EnumerateFiles(PathName,"*.jpg",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+            if(JPGFiles.Any()){
+                sw.Restart();
+                using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
+                    Parallel.ForEach(JPGFiles,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                        CutJPGMarginMain(ref f,writerSync);
+                    });
+                    writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                    sw.Stop();richTextBox1.Text+=("\nJPGWhiteRemove:"+sw.Elapsed+"\n");
+                }
             }
         }
-        private int GetFileNameBeforeChange(IEnumerable<string> files,string[] AllOldFileName) {
+        private int GetFileNameBeforeChange(IEnumerable<string> files,string[] AllOldFileName) {//ゴミファイルを除去 JPG jpeg PNG png種々あるので
             int MaxFile=-1;
             foreach(string f in files) {
                 FileInfo file=new FileInfo(f);
@@ -453,7 +457,7 @@ namespace asshuku {
             System.IO.Directory.Delete(PathName+"\\result_carmine",true);
         }
 
-        private void CreateZip(string PathName,IEnumerable<string> files) {
+        private void CreateZip(string PathName) {
             string Extension="zip";
             if(radioButton3.Checked) {//winrar
                 Extension="rar";
@@ -535,10 +539,9 @@ namespace asshuku {
                     RemoveMarginEntry(PathName);
                 }
                 CarmineCliAuto(PathName);
-                CreateZip(PathName,files);
+                CreateZip(PathName);
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
                 richTextBox1.ScrollToCaret();
-                richTextBox1.Text+=("\n");
                 logs.TopIndex = logs.Items.Count - 1;
             }
         }
