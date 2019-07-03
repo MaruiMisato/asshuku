@@ -5,21 +5,17 @@ using System.IO;
 //using System.IO.Path;
 using System.Text;
 using System.Windows.Forms;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using System.Threading.Tasks;//setparalle
+using System.Linq;//enum
+using System.Collections.Generic;//enum
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Text.RegularExpressions;//正規表現
-using System.Runtime.InteropServices;
-using System.Linq;
+using System.Runtime.InteropServices;//Marshal.Copy(data.Scan0,b,0,b.Length);
 using OpenCvSharp;
 using static Image;
 namespace asshuku {    
     public partial class Form1:Form {
-        [DllImport("7-zip32.dll",CharSet=CharSet.Ansi)]
-        private static extern int SevenZip(IntPtr hWnd,string strCommandLine,StringBuilder strOutPut,uint outputSize);
-        [DllImport("kernel32.dll")]
-        private static extern uint GetShortPathName(string strLongPath,StringBuilder strShortPath,uint buf);
         public Form1() {
             InitializeComponent();
         }
