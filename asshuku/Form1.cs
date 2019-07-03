@@ -467,41 +467,33 @@ namespace asshuku {
         }
         private void CreateZip(string PathName) {
             string Extension=".zip";
+            string Arguments;
+            string FileName;
             if(radioButton3.Checked) {//winrar
+                FileName = "Rar.exe";
                 Extension=".rar";
-                var App = new System.Diagnostics.ProcessStartInfo();
-                App.FileName = "Rar.exe";
                 if(radioButton6.Checked)//non compress
-                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m0 -ep \""+PathName+"\"";
+                    Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m0 -ep \""+PathName+"\"";
                 else//compress level max
-                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m5 -ep \""+PathName+"\"";
+                    Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m5 -ep \""+PathName+"\"";
                 //MessageBox.Show(App.Arguments);
                 /*
-  a             書庫にファイルを圧縮
-  rr[N]         リカバリレコードを付加
-  m<0..5>       圧縮方式を指定 (0-無圧縮...5-標準...5-最高圧縮)
-  mt<threads>   スレッドの数をセット
-  ep            名前からパスを除外/**/
-                App.UseShellExecute = false;
-                App.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                System.Diagnostics.Process AppProcess = System.Diagnostics.Process.Start(App);
-                AppProcess.WaitForExit();	// プロセスの終了を待つ
+                a             書庫にファイルを圧縮
+                rr[N]         リカバリレコードを付加
+                m<0..5>       圧縮方式を指定 (0-無圧縮...5-標準...5-最高圧縮)
+                mt<threads>   スレッドの数をセット
+                ep            名前からパスを除外/**/
             } else {
+                FileName = "7z.exe";
                 if(radioButton2.Checked) Extension=".7z";
-                var App = new System.Diagnostics.ProcessStartInfo();
-                App.FileName = "7z.exe";
                 if(radioButton5.Checked)
-                    App.Arguments = "a \""+PathName+Extension+"\" -mmt=on \""+PathName+"\\*\"";
+                    Arguments = "a \""+PathName+Extension+"\" -mmt=on \""+PathName+"\\*\"";
                 else if(radioButton4.Checked)
-                    App.Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx9 \""+PathName+"\\*\"";
+                    Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx9 \""+PathName+"\\*\"";
                 else
-                    App.Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx0 \""+PathName+"\\*\"";
-                App.UseShellExecute = false;
-                App.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                //MessageBox.Show(App.Arguments);
-                System.Diagnostics.Process AppProcess = System.Diagnostics.Process.Start(App);
-                AppProcess.WaitForExit();	// プロセスの終了を待つ
+                    Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx0 \""+PathName+"\\*\"";
             }
+            ExecuteAnotherApp(FileName,Arguments,false,true);
             RenameNumberOnlyFile(PathName,Extension); 
         }
         private string GetNumberOnlyPath(string PathName) {//ファイル名からX巻のXのみを返す
