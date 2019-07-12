@@ -172,8 +172,15 @@ namespace asshuku {
         private int GetRangeMedianF(IplImage p_img){
             return StandardAlgorithm.Math.MakeItOdd((int) Math.Sqrt(Math.Sqrt(Image.GetShortSide(p_img)+80)));
         }
-        private byte GetConcentrationThreshold(ToneValue ImageToneValue){
-            return (byte)((ImageToneValue.Max-ImageToneValue.Min)*25/Const.Tone8Bit);
+        private byte GetConcentrationThreshold(ToneValue ImageToneValue,double MangaTextConst){
+            return (byte)((ImageToneValue.Max-ImageToneValue.Min)* MangaTextConst / Const.Tone8Bit);
+        }
+        private double GetMangaTextConst(){//図表がマンガ 小説がText それぞれ画像密度が違うので 閾値を変更したい、
+            if (!MangaOrTextMode.Checked){//故にこの定数を使って閾値を変える
+                return 15;
+            }else {
+                return 25;
+            }
         }
         private bool CutPNGMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
@@ -216,7 +223,8 @@ namespace asshuku {
                 return false;
             }
             Threshold ImageThreshold = new Threshold();
-            ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
+            //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
+            ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue, GetMangaTextConst());//勾配が重要？
             Rect NewImageRect=new Rect();
             if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect)){
                 Cv.ReleaseImage(InputGrayImage);
@@ -257,7 +265,7 @@ namespace asshuku {
                 return false;
             }
             Threshold ImageThreshold = new Threshold();
-            ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
+            ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue, GetMangaTextConst());//勾配が重要？
             Rect NewImageRect=new Rect();
             if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect)){
                 Cv.ReleaseImage(InputGrayImage);
@@ -518,8 +526,9 @@ namespace asshuku {
                 if(!SortFiles(MaxFile,PathName,AllOldFileName))continue;
                 string[] NewFileName=new string[MaxFile];
                 CreateNewFileName(MaxFile,NewFileName);
-                ReNameAlfaBeta(PathName,ref files,NewFileName);
-                if(radioButton7.Checked){
+                if(WhetherToRename.Checked)
+                    ReNameAlfaBeta(PathName,ref files,NewFileName);
+                if(OptimizeTheImages.Checked){
                     RemoveMarginEntry(PathName);
                 }
                 CarmineCliAuto(PathName);
@@ -544,6 +553,20 @@ namespace asshuku {
             fbd.ShowDialog(this);//Display a dialog
             richTextBox1.Text=fbd.SelectedPath;//Show path
             Clipboard.SetFileDropList(new System.Collections.Specialized.StringCollection() { fbd.SelectedPath });//コピーするファイルのパスをStringCollectionに追加する. Copy to clipboard
+        }
+        private void MangaOrTextMode_CheckedChanged(object sender, EventArgs e){
+            if (MangaOrTextMode.Checked){
+                MangaOrTextMode.Text = "Manga mode";
+            }else{
+                MangaOrTextMode.Text = "Text mode";
+            }
+        }
+        private void DoNotOptimizeTheImages_CheckedChanged(object sender, EventArgs e){
+            if (DoNotOptimizeTheImages.Checked){
+                MangaOrTextMode.Visible = false;
+            }else{
+                MangaOrTextMode.Visible = true;
+            }
         }
     }
 }

@@ -5,21 +5,17 @@ using System.IO;
 //using System.IO.Path;
 using System.Text;
 using System.Windows.Forms;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using System.Threading.Tasks;//setparalle
+using System.Linq;//enum
+using System.Collections.Generic;//enum
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Text.RegularExpressions;//正規表現
-using System.Runtime.InteropServices;
-using Ionic.Zip;
+using System.Runtime.InteropServices;//Marshal.Copy(data.Scan0,b,0,b.Length);
 using OpenCvSharp;
 using static Image;
 namespace asshuku {    
     public partial class Form1:Form {
-        [DllImport("7-zip32.dll",CharSet=CharSet.Ansi)]
-        private static extern int SevenZip(IntPtr hWnd,string strCommandLine,StringBuilder strOutPut,uint outputSize);
-        [DllImport("kernel32.dll")]
-        private static extern uint GetShortPathName(string strLongPath,StringBuilder strShortPath,uint buf);
         public Form1() {
             InitializeComponent();
         }
@@ -66,17 +62,6 @@ namespace asshuku {
                 }
             bmp.UnlockBits(data);
             bmp.Dispose();
-        }                       
-        private void PNGOut2(IEnumerable<string> files) {
-            Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {
-                var app = new System.Diagnostics.ProcessStartInfo();
-                app.FileName = "pngout.exe";
-                app.Arguments = "\""+f+"\"";
-                app.UseShellExecute = false;
-                app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
-                p.WaitForExit();	// プロセスの終了を待つ
-            });
         }
         private bool CompareArrayAnd(int ___Threshold___,int[] ___CompareArray___){
             foreach(int ___CompareValue___ in ___CompareArray___){
@@ -190,7 +175,7 @@ namespace asshuku {
         private byte GetConcentrationThreshold(ToneValue ImageToneValue){
             return (byte)((ImageToneValue.Max-ImageToneValue.Min)*25/Const.Tone8Bit);
         }
-        private bool CutMarginMain(ref string f,TextWriter writerSync){
+        private bool CutPNGMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
@@ -252,22 +237,72 @@ namespace asshuku {
             Cv.ReleaseImage(OutputCutImage);
             return true;
         }
-        private void RemovePNGMarginEntry(string PathName) {
-            IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
-            System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();//stop watch get time
-            sw.Start();
-            using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
-                Parallel.ForEach(files,new ParallelOptions() { MaxDegreeOfParallelism=4 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                    CutMarginMain(ref f,writerSync);
-                });
-                writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+        private bool CutJPGMarginMain(ref string f,TextWriter writerSync){
+            IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
+            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
+            IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
+            int[] FilterMask=new int[Const.Neighborhood8];
+            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
+            Cv.ReleaseImage(MedianImage);
+            Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
+            int[] Histgram=new int[Const.Tone8Bit];
+            int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
+            ToneValue ImageToneValue = new ToneValue();
+            ImageToneValue.Max=Image.GetToneValueMax(Histgram);
+            ImageToneValue.Min=Image.GetToneValueMin(Histgram);
+            if(ImageToneValue.Max==ImageToneValue.Min){
+                Cv.ReleaseImage(InputGrayImage);
+                Cv.ReleaseImage(LaplacianImage);
+                return false;
             }
-            sw.Stop();richTextBox1.Text+=("\nWhiteRemove:"+sw.Elapsed);
-            sw.Restart();
-            PNGOut2(files);//PNGOptimize
-            sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+            Threshold ImageThreshold = new Threshold();
+            ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
+            Rect NewImageRect=new Rect();
+            if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect)){
+                Cv.ReleaseImage(InputGrayImage);
+                Cv.ReleaseImage(LaplacianImage);
+                return false;
+            }
+            writerSync.WriteLine(f+"\n"+"hi="+NewImageRect.YLow+":fu="+NewImageRect.XLow+":mi="+NewImageRect.YHigh+":yo="+NewImageRect.XHigh+"\n("+InputGrayImage.Width+","+InputGrayImage.Height+")\n("+NewImageRect.Size.Width+","+NewImageRect.Size.Height+")");//prb
+            Cv.ReleaseImage(InputGrayImage);
+            Cv.ReleaseImage(LaplacianImage);
+            //jpegtran.exe -crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
+            string Arguments = "-crop "+NewImageRect.Size.Width+"x"+NewImageRect.Size.Height+"+"+NewImageRect.XLow+"+"+NewImageRect.YLow+" -outfile \""+f+"\" \""+f+"\"";
+            ExecuteAnotherApp("jpegtran.exe",Arguments,false,true);
+            return true;
         }
-        private int GetFileNameBeforeChange(IEnumerable<string> files,string[] AllOldFileName) {
+        private void RemoveMarginEntry(string PathName) {
+            System.Diagnostics.Stopwatch sw=new System.Diagnostics.Stopwatch();//stop watch get time
+            IEnumerable<string> PNGFiles=System.IO.Directory.EnumerateFiles(PathName,"*.png",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+            sw.Start();
+            if(PNGFiles.Any()){
+                using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
+                    Parallel.ForEach(PNGFiles,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                        CutPNGMarginMain(ref f,writerSync);
+                    });
+                    writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                    sw.Stop();richTextBox1.Text+=("\nPNGWhiteRemove:"+sw.Elapsed);
+                    sw.Restart();
+                    Parallel.ForEach(PNGFiles,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {
+                        ExecuteAnotherApp("pngout.exe","\""+f+"\"",false,true);//PNGOptimize
+                    });
+                    sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+                }
+            }
+            IEnumerable<string> JPGFiles=System.IO.Directory.EnumerateFiles(PathName,"*.jpg",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+            if(JPGFiles.Any()){
+                sw.Restart();
+                using(TextWriter writerSync=TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss")+".log",false,System.Text.Encoding.GetEncoding("shift_jis")))) { 
+                    Parallel.ForEach(JPGFiles,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                        CutJPGMarginMain(ref f,writerSync);
+                    });
+                    writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                    sw.Stop();richTextBox1.Text+=("\nJPGWhiteRemove:"+sw.Elapsed+"\n");
+                }
+            }
+        }
+        private int GetFileNameBeforeChange(IEnumerable<string> files,string[] AllOldFileName) {//ゴミファイルを除去 JPG jpeg PNG png種々あるので
             int MaxFile=-1;
             foreach(string f in files) {
                 FileInfo file=new FileInfo(f);
@@ -390,51 +425,53 @@ namespace asshuku {
         }
         private void CarmineCliAuto(string PathName) {//ハフマンテーブルの最適化によってjpgサイズを縮小
             IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*.jpg",System.IO.SearchOption.AllDirectories);//Acquire only jpg files under the path.
+            if(!files.Any())
+                return;
             Parallel.ForEach(files,new ParallelOptions() {MaxDegreeOfParallelism=16},f=>{//マルチスレッド化するのでファイル毎
-                var app = new System.Diagnostics.ProcessStartInfo();
-                app.FileName = "carmine_cli.exe";
-                app.Arguments = "\""+f+"\"";
-                app.UseShellExecute = false;
-                app.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                System.Diagnostics.Process p = System.Diagnostics.Process.Start(app);
-                p.WaitForExit();	// プロセスの終了を待つ
+                ExecuteAnotherApp("carmine_cli.exe","\""+f+"\"",false,true);
             });
             MoveAllFileFolder(PathName+"\\result_carmine",PathName,true);// フォルダ内の上書き複写
             if(!System.IO.Directory.Exists(PathName+"\\result_carmine"))
                 return;
             System.IO.Directory.Delete(PathName+"\\result_carmine",true);
         }
-
-        private void CreateZip(string PathName,IEnumerable<string> files) {
-            string Extension="zip";
+        private void ExecuteAnotherApp(string FileName,string Arguments,bool UseShellExecute,bool CreateNoWindow){
+            var App = new System.Diagnostics.ProcessStartInfo();
+            App.FileName = FileName;
+            App.Arguments = Arguments;
+            App.UseShellExecute = UseShellExecute;
+            App.CreateNoWindow = CreateNoWindow;    // コンソール・ウィンドウを開
+            System.Diagnostics.Process AppProcess = System.Diagnostics.Process.Start(App);
+            AppProcess.WaitForExit();	// プロセスの終了を待つ
+        }
+        private void CreateZip(string PathName) {
+            string Extension=".zip";
+            string FileName = "Rar.exe";
+            string Arguments;
             if(radioButton3.Checked) {//winrar
-                Extension="rar";
-                var App = new System.Diagnostics.ProcessStartInfo();
-                App.FileName = "Rar.exe";
+                Extension=".rar";
                 if(radioButton6.Checked)//non compress
-                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m0 -ep " + " \""+PathName+"\" ";
+                    Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m0 -ep \""+PathName+"\"";
                 else//compress level max
-                    App.Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m5 -ep " + " \""+PathName+"\" ";
+                    Arguments = " a \""+PathName+".rar\" -rr5 -mt16 -m5 -ep \""+PathName+"\"";
                 //MessageBox.Show(App.Arguments);
                 /*
-  a             書庫にファイルを圧縮
-  rr[N]         リカバリレコードを付加
-  m<0..5>       圧縮方式を指定 (0-無圧縮...5-標準...5-最高圧縮)
-  mt<threads>   スレッドの数をセット
-  ep            名前からパスを除外/**/
-                App.UseShellExecute = false;
-                App.CreateNoWindow = true;    // コンソール・ウィンドウを開かない
-                System.Diagnostics.Process AppProcess = System.Diagnostics.Process.Start(App);
-                AppProcess.WaitForExit();	// プロセスの終了を待つ
+                a             書庫にファイルを圧縮
+                rr[N]         リカバリレコードを付加
+                m<0..5>       圧縮方式を指定 (0-無圧縮...5-標準...5-最高圧縮)
+                mt<threads>   スレッドの数をセット
+                ep            名前からパスを除外/**/
             } else {
-                if(radioButton2.Checked) Extension="7z";
-                StringBuilder strShortPath=new StringBuilder(1024);
-                GetShortPathName(PathName,strShortPath,1024);                
-                richTextBox1.Text+="\n"+PathName+"."+Extension+"\n";
-                if(radioButton5.Checked)SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\*",new StringBuilder(1024),1024);//Create a ZIP archive
-                else if(radioButton4.Checked)SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx9",new StringBuilder(1024),1024);
-                else SevenZip(this.Handle,"a -hide -t"+Extension+" \""+PathName+"."+Extension+"\" "+strShortPath+"\\* -mx0",new StringBuilder(1024),1024);//Create a ZIP archive
+                FileName = "7z.exe";
+                if(radioButton2.Checked) Extension=".7z";
+                if(radioButton5.Checked)
+                    Arguments = "a \""+PathName+Extension+"\" -mmt=on \""+PathName+"\\*\"";
+                else if(radioButton4.Checked)
+                    Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx9 \""+PathName+"\\*\"";
+                else
+                    Arguments = "a \""+PathName+Extension+"\" -mmt=on -mx0 \""+PathName+"\\*\"";
             }
+            ExecuteAnotherApp(FileName,Arguments,false,true);
             RenameNumberOnlyFile(PathName,Extension); 
         }
         private string GetNumberOnlyPath(string PathName) {//ファイル名からX巻のXのみを返す
@@ -451,11 +488,10 @@ namespace asshuku {
             return PathName.Replace(FileName,int.Parse(MatchedNumber.Value).ToString());//Z:\5
         }
         private bool RenameNumberOnlyFile(string PathName,string Extension) {
-                string NewFileName=GetNumberOnlyPath(PathName)+"."+Extension;
+                string NewFileName=GetNumberOnlyPath(PathName)+Extension;
                 if (System.IO.File.Exists(NewFileName))//重複
                     return false;
-                FileInfo file=new FileInfo(PathName+"."+Extension);
-                file.MoveTo(NewFileName);
+                File.Move(PathName+Extension,NewFileName);
                 richTextBox1.Text+=NewFileName+"\n";//Show path
                 return true;
         }
@@ -483,12 +519,13 @@ namespace asshuku {
                 string[] NewFileName=new string[MaxFile];
                 CreateNewFileName(MaxFile,NewFileName);
                 ReNameAlfaBeta(PathName,ref files,NewFileName);
-                if(radioButton7.Checked) RemovePNGMarginEntry(PathName);
+                if(radioButton7.Checked){
+                    RemoveMarginEntry(PathName);
+                }
                 CarmineCliAuto(PathName);
-                CreateZip(PathName,files);
+                CreateZip(PathName);
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
                 richTextBox1.ScrollToCaret();
-                richTextBox1.Text+=("\n");
                 logs.TopIndex = logs.Items.Count - 1;
             }
         }
