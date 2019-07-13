@@ -177,15 +177,19 @@ namespace asshuku {
         }
         private double GetMangaTextConst(){//図表がマンガ 小説がText それぞれ画像密度が違うので 閾値を変更したい、
             if (!MangaOrTextMode.Checked){//故にこの定数を使って閾値を変える
-                return 15;
+                return 15;//小説Text
             }else {
-                return 25;
+                return 25;//図表マンガ
             }
         }
         private bool CutPNGMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
+            if (!MangaOrTextMode.Checked){
+                Image.Filter.FastestMedian(InputGrayImage,MedianImage,0);//小説Textはメディアンフィルタ適用外 
+            }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
+                Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
+            }
 
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
             int[] FilterMask=new int[Const.Neighborhood8];
@@ -203,7 +207,11 @@ namespace asshuku {
                 #endif 
 
             Cv.ReleaseImage(MedianImage);
-            Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
+            if (!MangaOrTextMode.Checked){
+                Image.Filter.FastestMedian(LaplacianImage,0);//小説Textはメディアンフィルタ適用外 
+            }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
+                Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
+            }
 
                 #if (DEBUG_SAVE)  
                 Debug.SaveImage(LaplacianImage,nameof(LaplacianImage));//debug
@@ -248,12 +256,20 @@ namespace asshuku {
         private bool CutJPGMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
+            if (!MangaOrTextMode.Checked){
+                Image.Filter.FastestMedian(InputGrayImage,MedianImage,0);//小説Textはメディアンフィルタ適用外 
+            }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
+                Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
+            }
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
             int[] FilterMask=new int[Const.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
             Cv.ReleaseImage(MedianImage);
-            Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
+            if (!MangaOrTextMode.Checked){
+                Image.Filter.FastestMedian(LaplacianImage,0);//小説Textはメディアンフィルタ適用外 
+            }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
+                Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
+            }
             int[] Histgram=new int[Const.Tone8Bit];
             int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
             ToneValue ImageToneValue = new ToneValue();

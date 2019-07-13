@@ -150,8 +150,8 @@ public class Image{
         }
         delegate byte SelectBucketMedian(int[] Bucket, int Median);
         public static unsafe bool FastestMedian(IplImage src_img,IplImage dst_img,int n){
-            if((n&1)==0)return false;//偶数はさいなら
             Cv.Copy(src_img,dst_img);
+            if((n&1)==0)return false;//偶数はさいなら 元のをコピー
             int MaskSize=n>>1;//
             SelectBucketMedian BucketMedian=GetBucketMedianAscendingOrder;
             if(SelectAscendingDescendingOrder(src_img)==Is.DESCENDING_ORDER)
