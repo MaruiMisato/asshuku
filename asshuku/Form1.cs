@@ -188,7 +188,6 @@ namespace asshuku {
             }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
                 Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
             }
-
             int[] FilterMask=new int[Const.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
                 
@@ -228,12 +227,9 @@ namespace asshuku {
         }
         private unsafe bool UselessYRowSpacingDeletion(ref string f){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
-            //IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            
             int[] FilterMask=new int[Const.Neighborhood4];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),InputGrayImage,LaplacianImage);
-            //MedianLaplacianMedian(InputGrayImage,MedianImage,LaplacianImage);//MedianLaplacianMedianをかけて画像平滑化
             byte* p=(byte*)LaplacianImage.ImageData;
             int[] TargetYRow=new int[LaplacianImage.Height];//TargetYRow[y]が閾値以下ならその行を削除
             for(int y=0;y<LaplacianImage.Height;y++)
@@ -241,13 +237,9 @@ namespace asshuku {
                     if(p[LaplacianImage.WidthStep*y+x]>0){
                         ++TargetYRow[y];
                     } 
-            CvSize NewSize=new CvSize();
             int InstanceThreshold = 0;
-            NewSize.Height = GetNewHeightWidth(TargetYRow,LaplacianImage.Height,InstanceThreshold);
-            NewSize.Width =InputGrayImage.Size.Width;
-            IplImage OutputCutImage=Cv.CreateImage(NewSize,BitDepth.U8,Is.GrayScale);
+            IplImage OutputCutImage=Cv.CreateImage(new CvSize(InputGrayImage.Size.Width,GetNewHeightWidth(TargetYRow,LaplacianImage.Height,InstanceThreshold)),BitDepth.U8,Is.GrayScale);
             byte* src=(byte*)InputGrayImage.ImageData,dst=(byte*)OutputCutImage.ImageData;
-
             for(int x = 0;x<InputGrayImage.Width;x++){
                 int ValidYs=0;//有効なXの数
                 for(int y=0;y<InputGrayImage.Height;y++){
@@ -260,9 +252,8 @@ namespace asshuku {
             Cv.SaveImage(f,OutputCutImage,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
             Cv.ReleaseImage(InputGrayImage);
             Cv.ReleaseImage(LaplacianImage);
-            //Cv.ReleaseImage(MedianImage);
             Cv.ReleaseImage(OutputCutImage);
-            return false;//絶対到達しない
+            return true;
         }
         private unsafe bool UselessXColumSpacingDeletion(ref string f){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
@@ -277,12 +268,8 @@ namespace asshuku {
                     if(p[LaplacianImage.WidthStep*y+x]>0){
                         ++TargetXColumn[x];
                     } 
-            CvSize NewSize=new CvSize();
-            int InstanceThreshold = 1;
-            NewSize.Height = InputGrayImage.Size.Height;
-            NewSize.Width =GetNewHeightWidth(TargetXColumn,LaplacianImage.Width,InstanceThreshold);/* */
-
-            IplImage OutputCutImage=Cv.CreateImage(NewSize,BitDepth.U8,Is.GrayScale);
+            int InstanceThreshold = 0;
+            IplImage OutputCutImage=Cv.CreateImage(new CvSize(GetNewHeightWidth(TargetXColumn,LaplacianImage.Width,InstanceThreshold),InputGrayImage.Size.Height),BitDepth.U8,Is.GrayScale);
             byte* src=(byte*)InputGrayImage.ImageData,dst=(byte*)OutputCutImage.ImageData;
             for(int y=0;y<InputGrayImage.Height;y++){
                 int ValidXs=0;//有効なXの数
@@ -294,13 +281,10 @@ namespace asshuku {
                 }
             }
             Cv.SaveImage(f,OutputCutImage,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
-
             Cv.ReleaseImage(InputGrayImage);
             Cv.ReleaseImage(LaplacianImage);
-            //Cv.ReleaseImage(MedianImage);
             Cv.ReleaseImage(OutputCutImage);
-
-            return false;//絶対到達しない
+            return true;
         }
         private unsafe void NoiseRemoveTwoArea(ref string f,byte max) {
             IplImage p_img=Cv.LoadImage(f,LoadMode.GrayScale);
@@ -369,7 +353,8 @@ namespace asshuku {
                                 } else;
                             }
                         }
-                    else/**/ if(q[yoffset+x]==8)p[yoffset+x]=min;//Independent
+                    else/**/ 
+                    if(q[yoffset+x]==8)p[yoffset+x]=min;//Independent
                 }
             }
             Cv.SaveImage(f,p_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
@@ -381,13 +366,10 @@ namespace asshuku {
             IplImage FixedImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             Cv.Copy(InputGrayImage,FixedImage);
             byte* src=(byte*)InputGrayImage.ImageData,dst=(byte*)FixedImage.ImageData;
-                //Debug.DisplayImage(InputGrayImage,nameof(InputGrayImage));//debug
-                //Debug.DisplayImage(FixedImage,nameof(FixedImage));//debug
-
-            for(int y=1;y<InputGrayImage.Height-1;++y) {
-                for(int x=1;x<InputGrayImage.Width-1;++x) {
+            for(int y=2;y<InputGrayImage.Height-2;++y) {
+                for(int x=2;x<InputGrayImage.Width-2;++x) {
                     int offset=(InputGrayImage.WidthStep*y)+x;//current position
-                    if(((src[offset-1])==(src[offset+1]))&&((src[offset+1])==(src[offset-InputGrayImage.WidthStep]))&&((src[offset+1])==(src[offset-InputGrayImage.WidthStep])))
+                    if(((src[offset-1])==(src[offset+1]))&&((src[offset+1])==(src[offset-InputGrayImage.WidthStep]))&&((src[offset+1])==(src[offset-InputGrayImage.WidthStep]))&&((src[offset-2])==(src[offset+1]))&&((src[offset+2])==(src[offset+1]))&&((src[offset-2*InputGrayImage.WidthStep])==(src[offset+1]))&&((src[offset+2*InputGrayImage.WidthStep])==(src[offset+1])))
                         dst[offset]=(src[offset+1]);
                 }
             }
