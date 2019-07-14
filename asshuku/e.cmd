@@ -1,2 +1,2 @@
-call comp10
 call comp64
+call comp10

@@ -182,16 +182,13 @@ namespace asshuku {
                 return 25;//図表マンガ
             }
         }
-        private bool CutPNGMarginMain(ref string f,TextWriter writerSync){
-            IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
-            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+        private bool MedianLaplacianMedian(IplImage InputGrayImage,IplImage MedianImage,IplImage LaplacianImage){
             if (!MangaOrTextMode.Checked){
                 Image.Filter.FastestMedian(InputGrayImage,MedianImage,0);//小説Textはメディアンフィルタ適用外 
             }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
                 Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
             }
 
-            IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
             int[] FilterMask=new int[Const.Neighborhood8];
             Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
                 
@@ -219,7 +216,201 @@ namespace asshuku {
                 #if (DEBUG_DISPLAY)  
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
                 #endif 
+            return true;
+        }
+        private int GetNewHeightWidth(int[] TargetXColumnYRow,int HeightWidth,int InstanceThreshold){
+            int NewHeightWidth=0;
+            for(int xory=0;xory<HeightWidth;++xory){
+                if(TargetXColumnYRow[xory]>InstanceThreshold)//実態あり
+                    ++NewHeightWidth;
+            }
+            return NewHeightWidth;
+        }
+        private unsafe bool UselessYRowSpacingDeletion(ref string f){
+            IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
+            //IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             
+            int[] FilterMask=new int[Const.Neighborhood4];
+            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),InputGrayImage,LaplacianImage);
+            //MedianLaplacianMedian(InputGrayImage,MedianImage,LaplacianImage);//MedianLaplacianMedianをかけて画像平滑化
+            byte* p=(byte*)LaplacianImage.ImageData;
+            int[] TargetYRow=new int[LaplacianImage.Height];//TargetYRow[y]が閾値以下ならその行を削除
+            for(int y=0;y<LaplacianImage.Height;y++)
+                for(int x = 0;x<LaplacianImage.Width;x++)
+                    if(p[LaplacianImage.WidthStep*y+x]>0){
+                        ++TargetYRow[y];
+                    } 
+            CvSize NewSize=new CvSize();
+            int InstanceThreshold = 0;
+            NewSize.Height = GetNewHeightWidth(TargetYRow,LaplacianImage.Height,InstanceThreshold);
+            NewSize.Width =InputGrayImage.Size.Width;
+            IplImage OutputCutImage=Cv.CreateImage(NewSize,BitDepth.U8,Is.GrayScale);
+            byte* src=(byte*)InputGrayImage.ImageData,dst=(byte*)OutputCutImage.ImageData;
+
+            for(int x = 0;x<InputGrayImage.Width;x++){
+                int ValidYs=0;//有効なXの数
+                for(int y=0;y<InputGrayImage.Height;y++){
+                    if(TargetYRow[y]>InstanceThreshold){//実態あり
+                        dst[OutputCutImage.WidthStep*ValidYs+x]=src[InputGrayImage.WidthStep*y+x];
+                        ++ValidYs;
+                    }
+                }
+            }
+            Cv.SaveImage(f,OutputCutImage,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+            Cv.ReleaseImage(InputGrayImage);
+            Cv.ReleaseImage(LaplacianImage);
+            //Cv.ReleaseImage(MedianImage);
+            Cv.ReleaseImage(OutputCutImage);
+            return false;//絶対到達しない
+        }
+        private unsafe bool UselessXColumSpacingDeletion(ref string f){
+            IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
+            //IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            int[] FilterMask=new int[Const.Neighborhood4];
+            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),InputGrayImage,LaplacianImage);
+            byte* p=(byte*)LaplacianImage.ImageData;
+            int[] TargetXColumn=new int[LaplacianImage.Width];//TargetRow[x]が閾値以下ならその行を削除
+            for(int y=0;y<LaplacianImage.Height;y++)
+                for(int x = 0;x<LaplacianImage.Width;x++)
+                    if(p[LaplacianImage.WidthStep*y+x]>0){
+                        ++TargetXColumn[x];
+                    } 
+            CvSize NewSize=new CvSize();
+            int InstanceThreshold = 1;
+            NewSize.Height = InputGrayImage.Size.Height;
+            NewSize.Width =GetNewHeightWidth(TargetXColumn,LaplacianImage.Width,InstanceThreshold);/* */
+
+            IplImage OutputCutImage=Cv.CreateImage(NewSize,BitDepth.U8,Is.GrayScale);
+            byte* src=(byte*)InputGrayImage.ImageData,dst=(byte*)OutputCutImage.ImageData;
+            for(int y=0;y<InputGrayImage.Height;y++){
+                int ValidXs=0;//有効なXの数
+                for(int x = 0;x<InputGrayImage.Width;x++){
+                    if(TargetXColumn[x]>InstanceThreshold){//実態あり
+                        dst[OutputCutImage.WidthStep*y+ValidXs]=src[InputGrayImage.WidthStep*y+x];
+                        ++ValidXs;
+                    }
+                }
+            }
+            Cv.SaveImage(f,OutputCutImage,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+
+            Cv.ReleaseImage(InputGrayImage);
+            Cv.ReleaseImage(LaplacianImage);
+            //Cv.ReleaseImage(MedianImage);
+            Cv.ReleaseImage(OutputCutImage);
+
+            return false;//絶対到達しない
+        }
+        private unsafe void NoiseRemoveTwoArea(ref string f,byte max) {
+            IplImage p_img=Cv.LoadImage(f,LoadMode.GrayScale);
+            IplImage q_img=Cv.CreateImage(p_img.Size,BitDepth.U8,1);
+            Cv.Copy(p_img,q_img);
+            byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
+            for(int y=0;y<q_img.ImageSize;++y)q[y]=p[y]<max?(byte)0:(byte)255;//First, binarize
+            for(int y=1;y<q_img.Height-1;++y) {
+                int yoffset=(q_img.WidthStep*y);
+                for(int x=1;x<q_img.Width-1;++x)
+                    if(q[yoffset+x]==0)//Count white spots around black dots
+                        for(int yy=-1;yy<2;++yy) {
+                            int yyyoffset=q_img.WidthStep*(y+yy);
+                            for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==255) ++q[yoffset+x];
+                        }
+            }
+            for(int y=1;y<q_img.Height-1;++y) {
+                int yoffset=(q_img.WidthStep*y);
+                for(int x=1;x<q_img.Width-1;++x) {
+                    if(q[yoffset+x]==7)//When there are seven white spots in the periphery
+                        for(int yy=-1;yy<2;++yy) {
+                            int yyyoffset = q_img.WidthStep*(y+yy);
+                            for(int xx=-1;xx<2;++xx) {
+                                int offset=yyyoffset+(x+xx);
+                                if(q[offset]==7) {//仲間 ペア
+                                    p[yoffset+x]=max;//q[yoffset+p_img.NChannels*x]=6;//Unnecessary 
+                                    p[offset]=max;q[offset]=6;
+                                    yy=1;break;
+                                } else{};
+                            }
+                        }
+                    else if(q[yoffset+x]==8)p[yoffset+x]=max;//Independent
+                }
+            }
+            Cv.SaveImage(f,p_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+            Cv.ReleaseImage(q_img);
+            Cv.ReleaseImage(p_img);
+        }
+        private unsafe void NoiseRemoveWhite(ref string f,byte min) {
+            IplImage p_img=Cv.LoadImage(f,LoadMode.GrayScale);
+            IplImage q_img=Cv.CreateImage(p_img.Size,BitDepth.U8,1);
+            Cv.Copy(p_img,q_img);
+            byte* p=(byte*)p_img.ImageData,q=(byte*)q_img.ImageData;
+            for(int y=0;y<q_img.ImageSize;++y)q[y]=p[y]>min?(byte)255:(byte)0;//First, binarize
+            for(int y=1;y<q_img.Height-1;++y) {
+                int yoffset=(q_img.WidthStep*y);
+                for(int x=1;x<q_img.Width-1;++x)
+                    if(q[yoffset+x]==0)//Count white spots around black dots
+                        for(int yy=-1;yy<2;++yy) {
+                            int yyyoffset=q_img.WidthStep*(y+yy);
+                            for(int xx=-1;xx<2;++xx) if(q[yyyoffset+(x+xx)]==0) ++q[yoffset+x];
+                        }
+            }
+            for(int y=1;y<q_img.Height-1;++y) {
+                int yoffset=(q_img.WidthStep*y);
+                for(int x=1;x<q_img.Width-1;++x) {
+                    /*if(q[yoffset+x]==7)//When there are seven white spots in the periphery
+                        for(int yy=-1;yy<2;++yy) {
+                            int yyyoffset = q_img.WidthStep*(y+yy);
+                            for(int xx=-1;xx<2;++xx) {
+                                int offset=yyyoffset+(x+xx);
+                                if(q[offset]==7) {//仲間 ペア
+                                    p[yoffset+x]=min;//q[yoffset+p_img.NChannels*x]=6;//Unnecessary 
+                                    p[offset]=min;q[offset]=6;
+                                    yy=1;break;
+                                } else;
+                            }
+                        }
+                    else/**/ if(q[yoffset+x]==8)p[yoffset+x]=min;//Independent
+                }
+            }
+            Cv.SaveImage(f,p_img,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+            Cv.ReleaseImage(q_img);
+            Cv.ReleaseImage(p_img);
+        }
+        private static unsafe bool FixPixelMissing(ref string f){
+            IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
+            IplImage FixedImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            Cv.Copy(InputGrayImage,FixedImage);
+            byte* src=(byte*)InputGrayImage.ImageData,dst=(byte*)FixedImage.ImageData;
+                //Debug.DisplayImage(InputGrayImage,nameof(InputGrayImage));//debug
+                //Debug.DisplayImage(FixedImage,nameof(FixedImage));//debug
+
+            for(int y=1;y<InputGrayImage.Height-1;++y) {
+                for(int x=1;x<InputGrayImage.Width-1;++x) {
+                    int offset=(InputGrayImage.WidthStep*y)+x;//current position
+                    if(((src[offset-1])==(src[offset+1]))&&((src[offset+1])==(src[offset-InputGrayImage.WidthStep]))&&((src[offset+1])==(src[offset-InputGrayImage.WidthStep])))
+                        dst[offset]=(src[offset+1]);
+                }
+            }
+            //MessageBox.Show(f);
+            Cv.SaveImage(f,FixedImage,new ImageEncodingParam(ImageEncodingID.PngCompression,0));
+            Cv.ReleaseImage(InputGrayImage);
+            Cv.ReleaseImage(FixedImage);
+            return true;
+        }
+        private bool CutPNGMarginMain(ref string f,TextWriter writerSync){
+            int[] OriginHistgram=new int[Const.Tone8Bit];
+            if(Image.GetHistgramR(ref f,OriginHistgram)==Is.Color){//カラーでドット埋めは無理      
+            }else{
+                FixPixelMissing(ref f);//ピクセル欠けを修正
+                NoiseRemoveTwoArea(ref f,Image.GetToneValueMax(OriginHistgram));//小さいゴミ削除
+                NoiseRemoveWhite(ref f,Image.GetToneValueMin(OriginHistgram));//小さいゴミ削除
+                UselessXColumSpacingDeletion(ref f);//空白列削除
+                UselessYRowSpacingDeletion(ref f);//空白行削除
+            }
+            IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
+            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
+            MedianLaplacianMedian(InputGrayImage,MedianImage,LaplacianImage);//MedianLaplacianMedianをかけて画像平滑化
             int[] Histgram=new int[Const.Tone8Bit];
             int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
             ToneValue ImageToneValue = new ToneValue();
@@ -256,20 +447,8 @@ namespace asshuku {
         private bool CutJPGMarginMain(ref string f,TextWriter writerSync){
             IplImage InputGrayImage=Cv.LoadImage(f,LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            if (!MangaOrTextMode.Checked){
-                Image.Filter.FastestMedian(InputGrayImage,MedianImage,0);//小説Textはメディアンフィルタ適用外 
-            }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
-                Image.Filter.FastestMedian(InputGrayImage,MedianImage,GetRangeMedianF(InputGrayImage));
-            }
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
-            int[] FilterMask=new int[Const.Neighborhood8];
-            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask),MedianImage,LaplacianImage);
-            Cv.ReleaseImage(MedianImage);
-            if (!MangaOrTextMode.Checked){
-                Image.Filter.FastestMedian(LaplacianImage,0);//小説Textはメディアンフィルタ適用外 
-            }else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
-                Image.Filter.FastestMedian(LaplacianImage,GetRangeMedianF(LaplacianImage));
-            }
+            MedianLaplacianMedian(InputGrayImage,MedianImage,LaplacianImage);
             int[] Histgram=new int[Const.Tone8Bit];
             int Channel=Image.GetHistgramR(ref f,Histgram);//bool gray->true
             ToneValue ImageToneValue = new ToneValue();
@@ -281,6 +460,7 @@ namespace asshuku {
                 return false;
             }
             Threshold ImageThreshold = new Threshold();
+            //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
             ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue, GetMangaTextConst());//勾配が重要？
             Rect NewImageRect=new Rect();
             if(!GetNewImageSize(LaplacianImage,ImageThreshold,NewImageRect)){
