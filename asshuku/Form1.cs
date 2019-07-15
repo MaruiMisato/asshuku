@@ -469,11 +469,14 @@ namespace asshuku {
                     });
                     writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
                     sw.Stop();richTextBox1.Text+=("\nPNGWhiteRemove:"+sw.Elapsed);
-                    sw.Restart();
-                    Parallel.ForEach(PNGFiles,new ParallelOptions() { MaxDegreeOfParallelism=16 },f => {
-                        ExecuteAnotherApp("pngout.exe","\""+f+"\"",false,true);//PNGOptimize
-                    });
-                    sw.Stop();richTextBox1.Text+=("\npngout:"+sw.Elapsed);
+                    if (PNGout.Checked){
+                        sw.Restart();
+                        Parallel.ForEach(PNGFiles, new ParallelOptions() { MaxDegreeOfParallelism = 16 }, f => {
+                            ExecuteAnotherApp("pngout.exe", "\"" + f + "\"", false, true);//PNGOptimize
+                        });
+                        sw.Stop(); richTextBox1.Text += ("\npngout:" + sw.Elapsed);
+                    }
+                    
                 }
             }
             IEnumerable<string> JPGFiles=System.IO.Directory.EnumerateFiles(PathName,"*.jpg",System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.

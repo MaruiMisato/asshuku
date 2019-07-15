@@ -43,9 +43,10 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.MangaOrTextMode = new System.Windows.Forms.CheckBox();
             this.BrowserButton = new System.Windows.Forms.Button();
             this.WhetherToRename = new System.Windows.Forms.CheckBox();
-            this.MangaOrTextMode = new System.Windows.Forms.CheckBox();
+            this.PNGout = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -151,7 +152,7 @@
             // 
             this.OptimizeTheImages.AutoSize = true;
             this.OptimizeTheImages.Checked = true;
-            this.OptimizeTheImages.Location = new System.Drawing.Point(6, 30);
+            this.OptimizeTheImages.Location = new System.Drawing.Point(6, 26);
             this.OptimizeTheImages.Name = "OptimizeTheImages";
             this.OptimizeTheImages.Size = new System.Drawing.Size(64, 16);
             this.OptimizeTheImages.TabIndex = 0;
@@ -162,7 +163,7 @@
             // DoNotOptimizeTheImages
             // 
             this.DoNotOptimizeTheImages.AutoSize = true;
-            this.DoNotOptimizeTheImages.Location = new System.Drawing.Point(6, 48);
+            this.DoNotOptimizeTheImages.Location = new System.Drawing.Point(6, 41);
             this.DoNotOptimizeTheImages.Name = "DoNotOptimizeTheImages";
             this.DoNotOptimizeTheImages.Size = new System.Drawing.Size(49, 16);
             this.DoNotOptimizeTheImages.TabIndex = 1;
@@ -197,15 +198,29 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.PNGout);
             this.groupBox3.Controls.Add(this.MangaOrTextMode);
             this.groupBox3.Controls.Add(this.DoNotOptimizeTheImages);
             this.groupBox3.Controls.Add(this.OptimizeTheImages);
             this.groupBox3.Location = new System.Drawing.Point(435, 4);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(102, 87);
+            this.groupBox3.Size = new System.Drawing.Size(102, 98);
             this.groupBox3.TabIndex = 14;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "MarginRemove + PNGOptimize";
+            // 
+            // MangaOrTextMode
+            // 
+            this.MangaOrTextMode.AutoSize = true;
+            this.MangaOrTextMode.Checked = true;
+            this.MangaOrTextMode.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.MangaOrTextMode.Location = new System.Drawing.Point(6, 58);
+            this.MangaOrTextMode.Name = "MangaOrTextMode";
+            this.MangaOrTextMode.Size = new System.Drawing.Size(88, 16);
+            this.MangaOrTextMode.TabIndex = 16;
+            this.MangaOrTextMode.Text = "Manga mode";
+            this.MangaOrTextMode.UseVisualStyleBackColor = true;
+            this.MangaOrTextMode.CheckedChanged += new System.EventHandler(this.MangaOrTextMode_CheckedChanged);
             // 
             // BrowserButton
             // 
@@ -229,18 +244,17 @@
             this.WhetherToRename.Text = "Rename";
             this.WhetherToRename.UseVisualStyleBackColor = true;
             // 
-            // MangaOrTextMode
+            // PNGout
             // 
-            this.MangaOrTextMode.AutoSize = true;
-            this.MangaOrTextMode.Checked = true;
-            this.MangaOrTextMode.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.MangaOrTextMode.Location = new System.Drawing.Point(6, 65);
-            this.MangaOrTextMode.Name = "MangaOrTextMode";
-            this.MangaOrTextMode.Size = new System.Drawing.Size(88, 16);
-            this.MangaOrTextMode.TabIndex = 16;
-            this.MangaOrTextMode.Text = "Manga mode";
-            this.MangaOrTextMode.UseVisualStyleBackColor = true;
-            this.MangaOrTextMode.CheckedChanged += new System.EventHandler(this.MangaOrTextMode_CheckedChanged);
+            this.PNGout.AutoSize = true;
+            this.PNGout.Checked = true;
+            this.PNGout.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.PNGout.Location = new System.Drawing.Point(6, 75);
+            this.PNGout.Name = "PNGout";
+            this.PNGout.Size = new System.Drawing.Size(63, 16);
+            this.PNGout.TabIndex = 17;
+            this.PNGout.Text = "PNGout";
+            this.PNGout.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -288,6 +302,7 @@
         private System.Windows.Forms.Button BrowserButton;
         private System.Windows.Forms.CheckBox WhetherToRename;
         private System.Windows.Forms.CheckBox MangaOrTextMode;
+        private System.Windows.Forms.CheckBox PNGout;
     }
 }
 
