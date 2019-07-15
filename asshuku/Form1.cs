@@ -624,7 +624,15 @@ namespace asshuku {
                 logs.Items.Add(PathName);
                 richTextBox1.Text+=PathName;//Show path
                 if(!(File.GetAttributes(PathName).HasFlag( FileAttributes.Directory))){//ファイル
-                    RemoveMarginEntry(System.IO.Path.GetDirectoryName(PathName));
+                    string NewPath = System.IO.Path.GetDirectoryName(PathName)+"\\new\\";//"\\new"
+                    string NewFilePath =NewPath+Path.GetFileName(PathName);//"\\new\\hoge.jpg"
+                    //if(System.IO.Directory.Exists(NewPath)){
+                    //System.IO.Directory.CreateDirectory(NewPath);
+                        //MessageBox.Show(NewPath);
+                    //}
+                    System.IO.Directory.CreateDirectory(NewPath);
+                    System.IO.File.Copy(PathName,NewFilePath,true);
+                    RemoveMarginEntry(NewPath);//該当ファイルのあるフォルダの奴はすべて実行される別フォルダに単体コピーが理想
                     return;
                 }
                 IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*",System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
@@ -645,7 +653,6 @@ namespace asshuku {
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
                 richTextBox1.ScrollToCaret();
                 logs.TopIndex = logs.Items.Count - 1;
-                
             }
         }
         //JudgeFileOrDirectory FileProcessing
