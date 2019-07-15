@@ -623,6 +623,10 @@ namespace asshuku {
             foreach(string PathName in filespath) {//Enumerate acquired paths
                 logs.Items.Add(PathName);
                 richTextBox1.Text+=PathName;//Show path
+                if(!(File.GetAttributes(PathName).HasFlag( FileAttributes.Directory))){//ファイル
+                    RemoveMarginEntry(System.IO.Path.GetDirectoryName(PathName));
+                    return;
+                }
                 IEnumerable<string> files=System.IO.Directory.EnumerateFiles(PathName,"*",System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
                 string[] AllOldFileName=new string[System.IO.Directory.GetFiles(PathName,"*",SearchOption.TopDirectoryOnly).Length];//36*25+100 ファイル数 ゴミ込み
                 int MaxFile=GetFileNameBeforeChange(files,AllOldFileName);
@@ -641,8 +645,10 @@ namespace asshuku {
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
                 richTextBox1.ScrollToCaret();
                 logs.TopIndex = logs.Items.Count - 1;
+                
             }
         }
+        //JudgeFileOrDirectory FileProcessing
         private void button1_Click(object sender,EventArgs e) {
             if(!Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data. 
                 MessageBox.Show("Please select folders.");
@@ -669,8 +675,10 @@ namespace asshuku {
         private void DoNotOptimizeTheImages_CheckedChanged(object sender, EventArgs e){
             if (DoNotOptimizeTheImages.Checked){
                 MangaOrTextMode.Visible = false;
+                PNGout.Visible=false;
             }else{
                 MangaOrTextMode.Visible = true;
+                PNGout.Visible=true;
             }
         }
     }
