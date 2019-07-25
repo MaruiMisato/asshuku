@@ -28,10 +28,10 @@ public class Image{
     public static unsafe byte GetToneValueMax(IplImage p_img) {
         byte ToneValueMax=0;
         byte* p=(byte*)p_img.ImageData;
-        for(int y=0;y<p_img.ImageSize;++y) 
+        for(int y=0;y<p_img.ImageSize;++y)
             ToneValueMax = p[y]>ToneValueMax ? p[y]:ToneValueMax;
         return ToneValueMax;
-    }        
+    }
     public static unsafe byte GetToneValueMin(IplImage p_img) {
         byte ToneValueMin=255;
         byte* p=(byte*)p_img.ImageData;
@@ -48,14 +48,14 @@ public class Image{
         int i=0;
         while(Histgram[i++]==0);
         return (byte)--i;
-    }             
+    }
     public static int GetHistgramR(ref string f,int[] Histgram) {
         int Channel=Is.GrayScale;//1:gray,3:bgr color
         Bitmap bmp=new Bitmap(f);
-        BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);
+        BitmapData data=bmp.LockBits(new Rectangle(0,0,bmp.Width,bmp.Height),ImageLockMode.ReadWrite,PixelFormat.Format32bppArgb);//32bit で読む
         byte[] b=new byte[bmp.Width*bmp.Height*4];
         Marshal.Copy(data.Scan0,b,0,b.Length);
-        for(int i=0;i<b.Length;i+=4) 
+        for(int i=0;i<b.Length;i+=4)
             if(Channel==Is.Color||b[i]!=b[i+1]||b[i+2]!=b[i]){//Color images are not executed.
                 Channel=Is.Color;
                 Histgram[(int)((b[i]+b[i+1]+b[i+2]+0.5)/3)]++;//四捨五入
@@ -71,11 +71,11 @@ public class Image{
     public static unsafe void Transform2Linear(IplImage p_img,ToneValue ImageToneValue) {//階調値の線形変換 グレイスケールのみ
         double magnification=255.99/(ImageToneValue.Max-ImageToneValue.Min);//255.99ないと255が254になる
         byte* p=(byte*)p_img.ImageData;
-        for(int y=0;y<p_img.ImageSize;++y) 
+        for(int y=0;y<p_img.ImageSize;++y)
             p[y]=Image.CheckRange2Byte(magnification*(p[y]-ImageToneValue.Min));
     }
     public class Filter{
-        
+
         private static byte GetBucketMedianAscendingOrder(int[,] Bucket, int Median,int x){
             byte YIndex=0;//256 探索範囲の最小値を探す　
             int ScanHalf=0;
@@ -87,7 +87,7 @@ public class Image{
             int ScanHalf=0;
             while((ScanHalf+=Bucket[x,--YIndex])<Median);//Underflow
             return YIndex;
-        }        
+        }
         /*private static bool GetBucketMedianAscendingOrder(int[] Bucket, int Median,ref byte MedianValue){
             int YIndex=0;//256 探索範囲の最小値を探す　
             int ScanHalf=0;
@@ -113,7 +113,7 @@ public class Image{
             MedianValue=(byte)(YIndex);
             return true;
         }/* */
-        
+
         private static bool GetBucketMedianDescendingOrder(int[] Bucket, int Median,ref byte MedianValue){
             int YIndex=256;//256 探索範囲の最小値を探す　
             for(int ScanHalf=0;ScanHalf<Median;ScanHalf+=Bucket[YIndex]){
@@ -216,7 +216,7 @@ public class Image{
                 for(int i=0;i<FilterMask.Length;++i){       //1, 1,1     , 1,
                     FilterMask[i]=1;                        //1.-8,1    1,-4,1
                 }                                           //1, 1,1     , 1,
-                FilterMask[FilterMask.Length>>2] = -FilterMask.Length+1;   
+                FilterMask[FilterMask.Length>>2] = -FilterMask.Length+1;
                 return FilterMask;
             }
         }
@@ -233,7 +233,7 @@ public class Image{
             if(Mask.Length!=Const.Neighborhood8&&Mask.Length!=Const.Neighborhood4)return false;
             Cv.Set(dst_img,new CvScalar(0));
             byte* src=(byte*)src_img.ImageData,dst=(byte*)dst_img.ImageData;
-            for(int y=1;y<src_img.Height-1;++y) 
+            for(int y=1;y<src_img.Height-1;++y)
                 for(int x=1;x<src_img.Width-1;++x) {
                     int offset=src_img.WidthStep*y+x;
                     int temp;
@@ -264,4 +264,3 @@ public class Image{
         }
     }
 }
-    
