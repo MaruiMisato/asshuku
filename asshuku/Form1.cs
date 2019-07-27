@@ -404,18 +404,17 @@ namespace asshuku {
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
-            Threshold ImageThreshold = new Threshold {
-                //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
-                Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst())//勾配が重要？
-            };
+            //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
             Rect NewImageRect = new Rect();
-            if (!GetNewImageSize(LaplacianImage, ImageThreshold, NewImageRect)) {
+            if (!GetNewImageSize(LaplacianImage, new Threshold { Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst()) }, NewImageRect)) {
                 Cv.ReleaseImage(InputGrayImage);
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
             Cv.ReleaseImage(LaplacianImage);
-            writerSync.WriteLine(f + "\nthreshold=" + ImageThreshold.Concentration + ":Min=" + ImageToneValue.Min + ":Max=" + ImageToneValue.Max + ":hi=" + NewImageRect.YLow + ":fu=" + NewImageRect.XLow + ":mi=" + NewImageRect.YHigh + ":yo=" + NewImageRect.XHigh + "\n\t(" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->\t(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
+            writerSync.WriteLine(f + " threshold=" + new Threshold {
+                Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst())
+            }.Concentration + ",Min=" + ImageToneValue.Min + ",Max=" + ImageToneValue.Max + "\n(" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + ")\n (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
             IplImage OutputCutImage = Cv.CreateImage(NewImageRect.Size, BitDepth.U8, Channel);//prb
             if (Channel == Is.GrayScale) {
                 WhiteCut(InputGrayImage, OutputCutImage, NewImageRect);
@@ -444,17 +443,14 @@ namespace asshuku {
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
-            Threshold ImageThreshold = new Threshold {
-                //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
-                Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst())//勾配が重要？
-            };
             Rect NewImageRect = new Rect();
-            if (!GetNewImageSize(LaplacianImage, ImageThreshold, NewImageRect)) {
+            //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
+            if (!GetNewImageSize(LaplacianImage, new Threshold { Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst()) }, NewImageRect)) {
                 Cv.ReleaseImage(InputGrayImage);
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
-            writerSync.WriteLine(f + "\n" + "hi=" + NewImageRect.YLow + ":fu=" + NewImageRect.XLow + ":mi=" + NewImageRect.YHigh + ":yo=" + NewImageRect.XHigh + "\n(" + InputGrayImage.Width + "," + InputGrayImage.Height + ")\n(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
+            writerSync.WriteLine(f + " (" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + ")\n (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
             Cv.ReleaseImage(InputGrayImage);
             Cv.ReleaseImage(LaplacianImage);
             //jpegtran.exe -crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
