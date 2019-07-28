@@ -393,28 +393,24 @@ namespace asshuku {
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
             MedianLaplacianMedian(InputGrayImage, MedianImage, LaplacianImage);//MedianLaplacianMedianをかけて画像平滑化
-            int[] Histgram = new int[Const.Tone8Bit];
-            int Channel = Image.GetHistgramR(ref f, Histgram);//bool gray->true
-            ToneValue ImageToneValue = new ToneValue {
-                Max = Image.GetToneValueMax(Histgram),
-                Min = Image.GetToneValueMin(Histgram)
-            };
+            GetImageToneValue(f, out int Channel, out ToneValue ImageToneValue);
             if (ImageToneValue.Max == ImageToneValue.Min) {//豆腐
                 Cv.ReleaseImage(InputGrayImage);
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
             //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
+            Threshold ImageThreshold = new Threshold {
+                Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst())
+            };
             Rect NewImageRect = new Rect();
-            if (!GetNewImageSize(LaplacianImage, new Threshold { Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst()) }, NewImageRect)) {
+            if (!GetNewImageSize(LaplacianImage, ImageThreshold, NewImageRect)) {
                 Cv.ReleaseImage(InputGrayImage);
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
             Cv.ReleaseImage(LaplacianImage);
-            writerSync.WriteLine(f + " threshold=" + new Threshold {
-                Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst())
-            }.Concentration + ",Min=" + ImageToneValue.Min + ",Max=" + ImageToneValue.Max + "\n(" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + ")\n (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
+            writerSync.WriteLine(f + " threshold=" + ImageThreshold.Concentration + ",Min=" + ImageToneValue.Min + ",Max=" + ImageToneValue.Max + "\n(" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + ")\n (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
             IplImage OutputCutImage = Cv.CreateImage(NewImageRect.Size, BitDepth.U8, Channel);//prb
             if (Channel == Is.GrayScale) {
                 WhiteCut(InputGrayImage, OutputCutImage, NewImageRect);
@@ -427,17 +423,27 @@ namespace asshuku {
             Cv.ReleaseImage(OutputCutImage);
             return true;
         }
+
+        private static void GetImageToneValue(string f, out int Channel, out ToneValue ImageToneValue) {
+            int[] Histgram = new int[Const.Tone8Bit];
+            Channel = Image.GetHistgramR(ref f, Histgram);
+            ImageToneValue = new ToneValue {
+                Max = Image.GetToneValueMax(Histgram),
+                Min = Image.GetToneValueMin(Histgram)
+            };
+        }
+
         private bool CutJPGMarginMain(ref string f, TextWriter writerSync) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
             MedianLaplacianMedian(InputGrayImage, MedianImage, LaplacianImage);
-            int[] Histgram = new int[Const.Tone8Bit];
-            Image.GetHistgramR(ref f, Histgram);//bool gray->true
-            ToneValue ImageToneValue = new ToneValue {
-                Max = Image.GetToneValueMax(Histgram),
-                Min = Image.GetToneValueMin(Histgram)
-            };
+            GetImageToneValue(f, Channel: out _, out ToneValue ImageToneValue);
+            if (ImageToneValue.Max == ImageToneValue.Min) {//豆腐
+                Cv.ReleaseImage(InputGrayImage);
+                Cv.ReleaseImage(LaplacianImage);
+                return false;
+            }
             if (ImageToneValue.Max == ImageToneValue.Min) {
                 Cv.ReleaseImage(InputGrayImage);
                 Cv.ReleaseImage(LaplacianImage);
@@ -627,20 +633,16 @@ namespace asshuku {
                     continue;
                 }
                 IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*", System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
-                string[] AllOldFileName = new string[System.IO.Directory.GetFiles(PathName, "*", SearchOption.TopDirectoryOnly).Length];//36*25+100 ファイル数 ゴミ込み
+                string[] AllOldFileName = new string[files.Count()];//36*25+100 ファイル数 ゴミ込み
                 int MaxFile = GetFileNameBeforeChange(files, AllOldFileName);//ゴミ処理
                 if (!IsTheNumberOfFilesAppropriate(MaxFile)) continue;
-                if (WhetherToRename.Checked) {
-                    if (SortFiles(MaxFile, PathName, AllOldFileName)) {
+                if (WhetherToRename.Checked)
+                    if (SortFiles(MaxFile, PathName, AllOldFileName))
                         RenameEntry(PathName, files, MaxFile);
-                    }
-                }
-                if (OptimizeTheImages.Checked) {
+                if (OptimizeTheImages.Checked)
                     RemoveMarginEntry(PathName);
-                }
-                if (PNGout.Checked) {
+                if (PNGout.Checked)
                     ExecutePNGout(PathName);
-                }
                 CarmineCliAuto(PathName);
                 CreateZip(PathName);
             }
@@ -677,15 +679,13 @@ namespace asshuku {
         }
         private void MangaOrTextMode_CheckedChanged(object sender, EventArgs e) {
             MangaOrTextMode.Text = "Text mode";
-            if (MangaOrTextMode.Checked) {
+            if (MangaOrTextMode.Checked)
                 MangaOrTextMode.Text = "Manga mode";
-            }
         }
         private void DoNotOptimizeTheImages_CheckedChanged(object sender, EventArgs e) {
             MangaOrTextMode.Visible = true;
-            if (DoNotOptimizeTheImages.Checked) {
+            if (DoNotOptimizeTheImages.Checked)
                 MangaOrTextMode.Visible = false;
-            }
         }
     }
 }
