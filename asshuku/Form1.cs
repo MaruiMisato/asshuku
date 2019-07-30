@@ -651,14 +651,12 @@ namespace asshuku {
         }
         private void RenameFiles(string PathName, IEnumerable<string> files, string[] AllOldFileName, int MaxFile) {
             if (IsTheNumberOfFilesAppropriate(MaxFile))//個数
-                if (SortFiles(MaxFile, PathName, AllOldFileName))//ソートできるファイルか
-                    RenameEntry(PathName, files, MaxFile);//リネームする
-        }
-        private void RenameEntry(string PathName, IEnumerable<string> files, int MaxFile) {
-            string[] NewFileName = new string[MaxFile];
-            CreateNewFileName(MaxFile, NewFileName);
-            ReNameAlfaBeta(PathName, ref files, NewFileName);
-            ScrollAllTextBox();
+                if (SortFiles(MaxFile, PathName, AllOldFileName)) {//ソートできるファイルか
+                    string[] NewFileName = new string[MaxFile];
+                    CreateNewFileName(MaxFile, NewFileName);
+                    ReNameAlfaBeta(PathName, ref files, NewFileName);
+                    ScrollAllTextBox();
+                }
         }
         private void ScrollAllTextBox() {
             richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
@@ -668,11 +666,7 @@ namespace asshuku {
         //JudgeFileOrDirectory FileProcessing
         private async void Button1_Click(object sender, EventArgs e) {
             if (Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data.
-                //Task task = Task.Run(() => FileProcessing(Clipboard.GetFileDropList()));
-                //FileProcessing(Clipboard.GetFileDropList());
                 await FileProcessing(Clipboard.GetFileDropList());
-                //task.Wait();//ここで非同期処理が終わるまで待機
-                // FileProcessing();
             } else {//Check if clipboard has file drop format data.
                 MessageBox.Show("Please select folders.");
             }
