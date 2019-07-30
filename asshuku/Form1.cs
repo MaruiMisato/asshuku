@@ -629,9 +629,7 @@ namespace asshuku {
                     string[] AllOldFileName = new string[files.Count()];//36*25+100 ファイル数 ゴミ込み
                     int MaxFile = GetFileNameBeforeChange(files, AllOldFileName);//ゴミ処理
                     if (WhetherToRename.Checked)//リネームするか？
-                        if (IsTheNumberOfFilesAppropriate(MaxFile))//個数
-                            if (SortFiles(MaxFile, PathName, AllOldFileName))//ソートできるファイルか
-                                RenameEntry(PathName, files, MaxFile);//リネームする
+                        RenameFiles(PathName, files, AllOldFileName, MaxFile);
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(PathName);
                     if (PNGout.Checked)
@@ -648,7 +646,13 @@ namespace asshuku {
                     if (PNGout.Checked)
                         await Task.Run(() => ExecutePNGout(NewPath));
                 }
+                ScrollAllTextBox();
             }
+        }
+        private void RenameFiles(string PathName, IEnumerable<string> files, string[] AllOldFileName, int MaxFile) {
+            if (IsTheNumberOfFilesAppropriate(MaxFile))//個数
+                if (SortFiles(MaxFile, PathName, AllOldFileName))//ソートできるファイルか
+                    RenameEntry(PathName, files, MaxFile);//リネームする
         }
         private void RenameEntry(string PathName, IEnumerable<string> files, int MaxFile) {
             string[] NewFileName = new string[MaxFile];
