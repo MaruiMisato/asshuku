@@ -551,13 +551,12 @@ namespace asshuku {
             }
         }
         private void ExecuteAnotherApp(string FileName, string Arguments, bool UseShellExecute, bool CreateNoWindow) {
-            System.Diagnostics.ProcessStartInfo App = new System.Diagnostics.ProcessStartInfo {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo {
                 FileName = FileName,
                 Arguments = Arguments,
                 UseShellExecute = UseShellExecute,
                 CreateNoWindow = CreateNoWindow    // コンソール・ウィンドウを開
-            };
-            System.Diagnostics.Process.Start(App).WaitForExit();
+            }).WaitForExit();
         }
         private void CreateZip(string PathName) {
             string Extension = ".zip";
@@ -624,27 +623,30 @@ namespace asshuku {
             foreach (string PathName in filespath) {//Enumerate acquired paths
                 logs.Items.Add(PathName);
                 richTextBox1.Text += PathName;//Show path
-                if (!(File.GetAttributes(PathName).HasFlag(FileAttributes.Directory))) {//ファイルはnewをつくりそこで実行
+                if (File.GetAttributes(PathName).HasFlag(FileAttributes.Directory)) {//フォルダ
+                    IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*", System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
+                    string[] AllOldFileName = new string[files.Count()];//36*25+100 ファイル数 ゴミ込み
+                    int MaxFile = GetFileNameBeforeChange(files, AllOldFileName);//ゴミ処理
+                    if (WhetherToRename.Checked)//リネームするか？
+                        if (IsTheNumberOfFilesAppropriate(MaxFile))//個数
+                            if (SortFiles(MaxFile, PathName, AllOldFileName))//ソートできるファイルか
+                                RenameEntry(PathName, files, MaxFile);//リネームする
+                    if (OptimizeTheImages.Checked)
+                        RemoveMarginEntry(PathName);
+                    if (PNGout.Checked)
+                        ExecutePNGout(PathName);
+                    CarmineCliAuto(PathName);
+                    CreateZip(PathName);
+                } else {//ファイルはnewをつくりそこで実行
                     string NewPath = System.IO.Path.GetDirectoryName(PathName) + "\\new\\";//"\\new"
                     string NewFilePath = NewPath + Path.GetFileName(PathName);//"\\new\\hoge.jpg"
                     System.IO.Directory.CreateDirectory(NewPath);
                     System.IO.File.Copy(PathName, NewFilePath, true);
-                    RemoveMarginEntry(NewPath);//該当ファイルのあるフォルダの奴はすべて実行される別フォルダに単体コピーが理想
-                    continue;
+                    if (OptimizeTheImages.Checked)
+                        RemoveMarginEntry(NewPath);//該当ファイルのあるフォルダの奴はすべて実行される別フォルダに単体コピーが理想
+                    if (PNGout.Checked)
+                        ExecutePNGout(NewPath);
                 }
-                IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*", System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
-                string[] AllOldFileName = new string[files.Count()];//36*25+100 ファイル数 ゴミ込み
-                int MaxFile = GetFileNameBeforeChange(files, AllOldFileName);//ゴミ処理
-                if (!IsTheNumberOfFilesAppropriate(MaxFile)) continue;
-                if (WhetherToRename.Checked)
-                    if (SortFiles(MaxFile, PathName, AllOldFileName))
-                        RenameEntry(PathName, files, MaxFile);
-                if (OptimizeTheImages.Checked)
-                    RemoveMarginEntry(PathName);
-                if (PNGout.Checked)
-                    ExecutePNGout(PathName);
-                CarmineCliAuto(PathName);
-                CreateZip(PathName);
             }
         }
         private void RenameEntry(string PathName, IEnumerable<string> files, int MaxFile) {
@@ -653,7 +655,6 @@ namespace asshuku {
             ReNameAlfaBeta(PathName, ref files, NewFileName);
             ScrollAllTextBox();
         }
-
         private void ScrollAllTextBox() {
             richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
             richTextBox1.ScrollToCaret();
@@ -661,17 +662,17 @@ namespace asshuku {
         }
         //JudgeFileOrDirectory FileProcessing
         private void button1_Click(object sender, EventArgs e) {
-            if (!Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data.
+            if (Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data.
+                FileProcessing(Clipboard.GetFileDropList());
+            } else {//Check if clipboard has file drop format data.
                 MessageBox.Show("Please select folders.");
-                return;
             }
-            FileProcessing(Clipboard.GetFileDropList());
         }
         private void BrowserButtonClick(object sender, EventArgs e) {//Folder dialog related.
             FolderBrowserDialog fbd = new FolderBrowserDialog {
                 Description = "Please specify a folder.",//Specify explanatory text to be displayed at the top.
                 SelectedPath = @"Z:\download\",//Specify the folder to select first // It must be a folder under RootFolder
-                ShowNewFolderButton = true//AlLow users to create new folders
+                ShowNewFolderButton = false//not AlLow users to create new folders
             };//Create an instance of the FolderBrowserDialog class
             fbd.ShowDialog(this);//Display a dialog
             richTextBox1.Text = fbd.SelectedPath;//Show path
