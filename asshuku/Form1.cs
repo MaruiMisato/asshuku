@@ -619,8 +619,9 @@ namespace asshuku {
                 return true;
             }
         }
-        private void FileProcessing(System.Collections.Specialized.StringCollection filespath) {
+        private async Task FileProcessing(System.Collections.Specialized.StringCollection filespath) {
             foreach (string PathName in filespath) {//Enumerate acquired paths
+                //MessageBox.Show("ga");
                 logs.Items.Add(PathName);
                 richTextBox1.Text += PathName;//Show path
                 if (File.GetAttributes(PathName).HasFlag(FileAttributes.Directory)) {//フォルダ
@@ -634,7 +635,7 @@ namespace asshuku {
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(PathName);
                     if (PNGout.Checked)
-                        ExecutePNGout(PathName);
+                        await Task.Run(() => ExecutePNGout(PathName));
                     CarmineCliAuto(PathName);
                     CreateZip(PathName);
                 } else {//ファイルはnewをつくりそこで実行
@@ -645,7 +646,7 @@ namespace asshuku {
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(NewPath);//該当ファイルのあるフォルダの奴はすべて実行される別フォルダに単体コピーが理想
                     if (PNGout.Checked)
-                        ExecutePNGout(NewPath);
+                        await Task.Run(() => ExecutePNGout(NewPath));
                 }
             }
         }
@@ -661,9 +662,13 @@ namespace asshuku {
             logs.TopIndex = logs.Items.Count - 1;
         }
         //JudgeFileOrDirectory FileProcessing
-        private void button1_Click(object sender, EventArgs e) {
+        private async void Button1_Click(object sender, EventArgs e) {
             if (Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data.
-                FileProcessing(Clipboard.GetFileDropList());
+                //Task task = Task.Run(() => FileProcessing(Clipboard.GetFileDropList()));
+                //FileProcessing(Clipboard.GetFileDropList());
+                await FileProcessing(Clipboard.GetFileDropList());
+                //task.Wait();//ここで非同期処理が終わるまで待機
+                // FileProcessing();
             } else {//Check if clipboard has file drop format data.
                 MessageBox.Show("Please select folders.");
             }
