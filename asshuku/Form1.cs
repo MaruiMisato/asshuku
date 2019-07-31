@@ -373,7 +373,6 @@ namespace asshuku {
                         dst[offset] = (src[offset + 1]);
                 }
             }
-            //MessageBox.Show(f);
             Cv.SaveImage(f, FixedImage, new ImageEncodingParam(ImageEncodingID.PngCompression, 0));
             Cv.ReleaseImage(InputGrayImage);
             Cv.ReleaseImage(FixedImage);
@@ -399,9 +398,8 @@ namespace asshuku {
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
-            //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
             Threshold ImageThreshold = new Threshold {
-                Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst())
+                Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst())//勾配が重要？
             };
             Rect NewImageRect = new Rect();
             if (!GetNewImageSize(LaplacianImage, ImageThreshold, NewImageRect)) {
@@ -423,7 +421,6 @@ namespace asshuku {
             Cv.ReleaseImage(OutputCutImage);
             return true;
         }
-
         private static void GetImageToneValue(string f, out int Channel, out ToneValue ImageToneValue) {
             int[] Histgram = new int[Const.Tone8Bit];
             Channel = Image.GetHistgramR(ref f, Histgram);
@@ -432,7 +429,6 @@ namespace asshuku {
                 Min = Image.GetToneValueMin(Histgram)
             };
         }
-
         private bool CutJPGMarginMain(ref string f, TextWriter writerSync) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
@@ -520,8 +516,8 @@ namespace asshuku {
                     if (System.IO.File.Exists(PathName + "/0" + file.Name)) {//重複
                         richTextBox1.Text += "\n:" + PathName + "/0" + file.Name + ":Exists";
                         return false;
-                    } else file.MoveTo((PathName + "/0" + file.Name));//0->000  1000枚までしか無理 7zは650枚
-                if ((file.Name[0] != 'z')) file.MoveTo((PathName + "/z" + file.Name));//000->z000
+                    } else file.MoveTo(PathName + "/0" + file.Name);//0->000  1000枚までしか無理 7zは650枚
+                if (file.Name[0] != 'z') file.MoveTo(PathName + "/z" + file.Name);//000->z000
             }
             return true;
         }
@@ -552,10 +548,9 @@ namespace asshuku {
         }
         private void ExecuteAnotherApp(string FileName, string Arguments, bool UseShellExecute, bool CreateNoWindow) {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo {
-                FileName = FileName,
-                Arguments = Arguments,
+                FileName = FileName, Arguments = Arguments,
                 UseShellExecute = UseShellExecute,
-                CreateNoWindow = CreateNoWindow    // コンソール・ウィンドウを開
+                CreateNoWindow = CreateNoWindow    // コンソール・ウィンドウを開かない
             }).WaitForExit();
         }
         private void CreateZip(string PathName) {
@@ -568,13 +563,11 @@ namespace asshuku {
                     Arguments = " a \"" + PathName + ".rar\" -rr5 -mt" + System.Environment.ProcessorCount + "-m0 -ep \"" + PathName + "\"";
                 else//compress level max
                     Arguments = " a \"" + PathName + ".rar\" -rr5 -mt" + System.Environment.ProcessorCount + " -m5 -ep \"" + PathName + "\"";
-                //MessageBox.Show(App.Arguments);
-                /*
-                a             書庫にファイルを圧縮
-                rr[N]         リカバリレコードを付加
-                m<0..5>       圧縮方式を指定 (0-無圧縮...5-標準...5-最高圧縮)
-                mt<threads>   スレッドの数をセット
-                ep            名前からパスを除外/**/
+                /*a             書庫にファイルを圧縮
+                  rr[N]         リカバリレコードを付加
+                  m<0..5>       圧縮方式を指定 (0-無圧縮...5-標準...5-最高圧縮)
+                  mt<threads>   スレッドの数をセット
+                  ep            名前からパスを除外*/
             } else {
                 FileName = "7z.exe";
                 if (radioButton2.Checked) Extension = ".7z";
@@ -621,10 +614,9 @@ namespace asshuku {
         }
         private async Task FileProcessing(System.Collections.Specialized.StringCollection filespath) {
             foreach (string PathName in filespath) {//Enumerate acquired paths
-                //MessageBox.Show("ga");
                 logs.Items.Add(PathName);
                 richTextBox1.Text += PathName;//Show path
-                if (File.GetAttributes(PathName).HasFlag(FileAttributes.Directory)) {//フォルダ
+                if (File.GetAttributes(PathName).HasFlag(FileAttributes.Directory)) {//フォルダ //JudgeFileOrDirectory
                     IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*", System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
                     string[] AllOldFileName = new string[files.Count()];//36*25+100 ファイル数 ゴミ込み
                     int MaxFile = GetFileNameBeforeChange(files, AllOldFileName);//ゴミ処理
@@ -637,14 +629,14 @@ namespace asshuku {
                     CarmineCliAuto(PathName);
                     CreateZip(PathName);
                 } else {//ファイルはnewをつくりそこで実行
-                    string NewPath = System.IO.Path.GetDirectoryName(PathName) + "\\new\\";//"\\new"
-                    string NewFilePath = NewPath + Path.GetFileName(PathName);//"\\new\\hoge.jpg"
-                    System.IO.Directory.CreateDirectory(NewPath);
-                    System.IO.File.Copy(PathName, NewFilePath, true);
+                    string NewPath = System.IO.Path.GetDirectoryName(PathName) + "\\new\\";
+                    System.IO.Directory.CreateDirectory(NewPath);//"\\new"
+                    System.IO.File.Copy(PathName, NewPath + Path.GetFileName(PathName), true);//"\\new\\hoge.jpg"
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(NewPath);//該当ファイルのあるフォルダの奴はすべて実行される別フォルダに単体コピーが理想
                     if (PNGout.Checked)
                         await Task.Run(() => ExecutePNGout(NewPath));
+                    CarmineCliAuto(NewPath);
                 }
                 ScrollAllTextBox();
             }
@@ -663,7 +655,6 @@ namespace asshuku {
             richTextBox1.ScrollToCaret();
             logs.TopIndex = logs.Items.Count - 1;
         }
-        //JudgeFileOrDirectory FileProcessing
         private async void Button1_Click(object sender, EventArgs e) {
             if (Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data.
                 await FileProcessing(Clipboard.GetFileDropList());
