@@ -379,12 +379,12 @@ namespace asshuku {
             return true;
         }
         private bool CutPNGMarginMain(ref string f, TextWriter writerSync) {
-            int[] OriginHistgram = new int[Const.Tone8Bit];
+            byte[] OriginHistgram = new byte[Const.Tone8Bit];
             if (Image.GetHistgramR(ref f, OriginHistgram) == Is.Color) {//カラーでドット埋めは無理
             } else {
                 FixPixelMissing(ref f);//ピクセル欠けを修正
-                NoiseRemoveTwoArea(ref f, Image.GetToneValueMax(OriginHistgram));//小さいゴミ削除
-                NoiseRemoveWhite(ref f, Image.GetToneValueMin(OriginHistgram));//小さいゴミ削除
+                NoiseRemoveTwoArea(ref f, OriginHistgram.Max());//小さいゴミ削除
+                NoiseRemoveWhite(ref f, OriginHistgram.Min());//小さいゴミ削除
                 UselessXColumSpacingDeletion(ref f);//空白列削除
                 UselessYRowSpacingDeletion(ref f);//空白行削除
             }
@@ -422,11 +422,11 @@ namespace asshuku {
             return true;
         }
         private static void GetImageToneValue(string f, out int Channel, out ToneValue ImageToneValue) {
-            int[] Histgram = new int[Const.Tone8Bit];
+            byte[] Histgram = new byte[Const.Tone8Bit];
             Channel = Image.GetHistgramR(ref f, Histgram);
             ImageToneValue = new ToneValue {
-                Max = Image.GetToneValueMax(Histgram),
-                Min = Image.GetToneValueMin(Histgram)
+                Max = Histgram.Max(),
+                Min = Histgram.Min()
             };
         }
         private bool CutJPGMarginMain(ref string f, TextWriter writerSync) {
@@ -436,11 +436,6 @@ namespace asshuku {
             MedianLaplacianMedian(InputGrayImage, MedianImage, LaplacianImage);
             GetImageToneValue(f, Channel: out _, out ToneValue ImageToneValue);
             if (ImageToneValue.Max == ImageToneValue.Min) {//豆腐
-                Cv.ReleaseImage(InputGrayImage);
-                Cv.ReleaseImage(LaplacianImage);
-                return false;
-            }
-            if (ImageToneValue.Max == ImageToneValue.Min) {
                 Cv.ReleaseImage(InputGrayImage);
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
@@ -515,11 +510,23 @@ namespace asshuku {
                 while ((file.Name.Length - file.Extension.Length) < 3)
                     if (System.IO.File.Exists(PathName + "/0" + file.Name)) {//重複
                         richTextBox1.Text += "\n:" + PathName + "/0" + file.Name + ":Exists";
+                        MessageBox.Show("ff");
                         return false;
                     } else file.MoveTo(PathName + "/0" + file.Name);//0->000  1000枚までしか無理 7zは650枚
-                if (file.Name[0] != 'z') file.MoveTo(PathName + "/z" + file.Name);//000->z000
+                if (file.Name[0] == 'z')
+                    continue;
+                if (System.IO.File.Exists(PathName + "/z" + file.Name)) {//重複
+                    richTextBox1.Text += "\n:" + PathName + "/z" + file.Name + ":Exists";
+                    return false;
+                } else file.MoveTo(PathName + "/z" + file.Name);//0->000  1000枚までしか無理 7zは650枚
             }
             return true;
+        }
+        private void UnSortFiles(string PathName, string[] AllOldFileName) {
+            int i = 0;
+            foreach (string f in System.IO.Directory.EnumerateFiles(PathName, "*", System.IO.SearchOption.AllDirectories)) {
+                new FileInfo(f).MoveTo(AllOldFileName[i++]);//000->z000
+            }/**/
         }
         private void CreateNewFileName(int MaxFile, string[] NewFileName) {
             if (radioButton2.Checked && MaxFile <= 26 * 25) {//7zip under 26*25=650
@@ -604,13 +611,13 @@ namespace asshuku {
             if (MaxFile > (36 * 25) + 100) {
                 richTextBox1.Text += "\nMaxFile:" + MaxFile + " => over 1,000\n";
                 return false;
-            } else if (MaxFile < 1) {
+            }
+            if (MaxFile < 1) {
                 richTextBox1.Text += "\nMaxFile:" + MaxFile + " 0";
                 return false;
-            } else {
-                richTextBox1.Text += "\nMaxFile:" + MaxFile + ":OK.";
-                return true;
             }
+            richTextBox1.Text += "\nMaxFile:" + MaxFile + ":OK.";
+            return true;
         }
         private async Task FileProcessing(System.Collections.Specialized.StringCollection filespath) {
             foreach (string PathName in filespath) {//Enumerate acquired paths
@@ -621,7 +628,8 @@ namespace asshuku {
                     string[] AllOldFileName = new string[files.Count()];//36*25+100 ファイル数 ゴミ込み
                     int MaxFile = GetFileNameBeforeChange(files, AllOldFileName);//ゴミ処理
                     if (WhetherToRename.Checked)//リネームするか？
-                        RenameFiles(PathName, files, AllOldFileName, MaxFile);
+                        if (!RenameFiles(PathName, files, AllOldFileName, MaxFile))
+                            return;//リネーム失敗
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(PathName);
                     if (PNGout.Checked)
@@ -641,14 +649,19 @@ namespace asshuku {
                 ScrollAllTextBox();
             }
         }
-        private void RenameFiles(string PathName, IEnumerable<string> files, string[] AllOldFileName, int MaxFile) {
-            if (IsTheNumberOfFilesAppropriate(MaxFile))//個数
-                if (SortFiles(MaxFile, PathName, AllOldFileName)) {//ソートできるファイルか
-                    string[] NewFileName = new string[MaxFile];
-                    CreateNewFileName(MaxFile, NewFileName);
-                    ReNameAlfaBeta(PathName, ref files, NewFileName);
-                    ScrollAllTextBox();
-                }
+        private bool RenameFiles(string PathName, IEnumerable<string> files, string[] AllOldFileName, int MaxFile) {
+            if (!IsTheNumberOfFilesAppropriate(MaxFile))//個数
+                return false;
+            if (SortFiles(MaxFile, PathName, AllOldFileName)) {//ソートできるファイルか
+                string[] NewFileName = new string[MaxFile];
+                CreateNewFileName(MaxFile, NewFileName);
+                ReNameAlfaBeta(PathName, ref files, NewFileName);
+                ScrollAllTextBox();
+                return true;
+            } else {
+                UnSortFiles(PathName, AllOldFileName);
+                return false;
+            }
         }
         private void ScrollAllTextBox() {
             richTextBox1.SelectionStart = richTextBox1.Text.Length;//末尾に移動
