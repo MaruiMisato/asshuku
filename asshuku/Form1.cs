@@ -361,7 +361,7 @@ namespace asshuku {
             Cv.ReleaseImage(q_img);
             Cv.ReleaseImage(p_img);
         }
-        private static unsafe bool FixPixelMissing(ref string f) {
+        private static unsafe bool FixPixelMissing(in string f) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage FixedImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             Cv.Copy(InputGrayImage, FixedImage);
@@ -382,7 +382,7 @@ namespace asshuku {
             byte[] OriginHistgram = new byte[Const.Tone8Bit];
             if (Image.GetHistgramR(ref f, OriginHistgram) == Is.Color) {//カラーでドット埋めは無理
             } else {
-                FixPixelMissing(ref f);//ピクセル欠けを修正
+                FixPixelMissing(in f);//ピクセル欠けを修正
                 NoiseRemoveTwoArea(ref f, OriginHistgram.Max());//小さいゴミ削除
                 NoiseRemoveWhite(ref f, OriginHistgram.Min());//小さいゴミ削除
                 UselessXColumSpacingDeletion(ref f);//空白列削除
@@ -408,7 +408,7 @@ namespace asshuku {
                 return false;
             }
             Cv.ReleaseImage(LaplacianImage);
-            writerSync.WriteLine(f + " threshold=" + ImageThreshold.Concentration + ",Min=" + ImageToneValue.Min + ",Max=" + ImageToneValue.Max + "\n(" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + ")\n (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
+            writerSync.WriteLine(f + " threshold=" + ImageThreshold.Concentration + ",Min=" + ImageToneValue.Min + ",Max=" + ImageToneValue.Max + "\n(" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + "), (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
             IplImage OutputCutImage = Cv.CreateImage(NewImageRect.Size, BitDepth.U8, Channel);//prb
             if (Channel == Is.GrayScale) {
                 WhiteCut(InputGrayImage, OutputCutImage, NewImageRect);
@@ -447,12 +447,12 @@ namespace asshuku {
                 Cv.ReleaseImage(LaplacianImage);
                 return false;
             }
-            writerSync.WriteLine(f + " (" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + ")\n (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
+            writerSync.WriteLine(f + " (" + NewImageRect.XLow + "," + NewImageRect.YLow + "),(" + NewImageRect.XHigh + "," + NewImageRect.YHigh + "), (" + InputGrayImage.Width + "," + InputGrayImage.Height + ")->(" + NewImageRect.Size.Width + "," + NewImageRect.Size.Height + ")");//prb
             Cv.ReleaseImage(InputGrayImage);
             Cv.ReleaseImage(LaplacianImage);
             //jpegtran.exe -crop 808x1208+0+63 -outfile Z:\bin\22\6.jpg Z:\bin\22\6.jpg
-            string Arguments = "-crop " + NewImageRect.Size.Width + "x" + NewImageRect.Size.Height + "+" + NewImageRect.XLow + "+" + NewImageRect.YLow + " -outfile \"" + f + "\" \"" + f + "\"";
-            ExecuteAnotherApp("jpegtran.exe", Arguments, false, true);
+            string Arguments = "-crop " + NewImageRect.Size.Width + "x" + NewImageRect.Size.Height + "+" + NewImageRect.XLow + "+" + NewImageRect.YLow + " -progressive -outfile \"" + f + "\" \"" + f + "\"";
+            ExecuteAnotherApp("jpegtran.exe", in Arguments, false, true);
             return true;
         }
         private void ExecutePNGout(string PathName) {
@@ -553,7 +553,7 @@ namespace asshuku {
                 });
             }
         }
-        private void ExecuteAnotherApp(string FileName, string Arguments, bool UseShellExecute, bool CreateNoWindow) {
+        private void ExecuteAnotherApp(in string FileName, in string Arguments, bool UseShellExecute, bool CreateNoWindow) {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo {
                 FileName = FileName, Arguments = Arguments,
                 UseShellExecute = UseShellExecute,
@@ -585,7 +585,7 @@ namespace asshuku {
                 else
                     Arguments = "a \"" + PathName + Extension + "\" -mmt=on -mx0 \"" + PathName + "\\*\"";
             }
-            ExecuteAnotherApp(FileName, Arguments, false, true);
+            ExecuteAnotherApp(in FileName, in Arguments, false, true);
             RenameNumberOnlyFile(PathName, Extension);
         }
         private string GetNumberOnlyPath(string PathName) {//ファイル名からX巻のXのみを返す
@@ -610,16 +610,15 @@ namespace asshuku {
         private bool IsTheNumberOfFilesAppropriate(int MaxFile) {
             if (MaxFile > (36 * 25) + 100) {
                 richTextBox1.Text += "\nMaxFile:" + MaxFile + " => over 1,000\n";
-                return false;
-            }
-            if (MaxFile < 1) {
+            } else if (MaxFile < 1) {
                 richTextBox1.Text += "\nMaxFile:" + MaxFile + " 0";
-                return false;
+            } else {
+                richTextBox1.Text += "\nMaxFile:" + MaxFile + ":OK.";
+                return true;
             }
-            richTextBox1.Text += "\nMaxFile:" + MaxFile + ":OK.";
-            return true;
+            return false;
         }
-        private async Task FileProcessing(System.Collections.Specialized.StringCollection filespath) {
+        private async Task FileOrFolder(System.Collections.Specialized.StringCollection filespath) {
             foreach (string PathName in filespath) {//Enumerate acquired paths
                 logs.Items.Add(PathName);
                 richTextBox1.Text += PathName;//Show path
@@ -648,6 +647,16 @@ namespace asshuku {
                 }
                 ScrollAllTextBox();
             }
+            CompressLogsWith7z();
+        }
+        private void CompressLogsWith7z() {
+            using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss") + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
+                writerSync.WriteLine(richTextBox1.Text);
+                foreach (string LogsItems in logs.Items) {
+                    writerSync.WriteLine(LogsItems);//richTextBox1
+                }
+            }
+            ExecuteAnotherApp("7z.exe", "a " + DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss") + ".7z *.log -sdel", false, true);
         }
         private bool RenameFiles(string PathName, IEnumerable<string> files, string[] AllOldFileName, int MaxFile) {
             if (!IsTheNumberOfFilesAppropriate(MaxFile))//個数
@@ -670,7 +679,7 @@ namespace asshuku {
         }
         private async void Button1_Click(object sender, EventArgs e) {
             if (Clipboard.ContainsFileDropList()) {//Check if clipboard has file drop format data.
-                await FileProcessing(Clipboard.GetFileDropList());
+                await FileOrFolder(Clipboard.GetFileDropList());
             } else {//Check if clipboard has file drop format data.
                 MessageBox.Show("Please select folders.");
             }
