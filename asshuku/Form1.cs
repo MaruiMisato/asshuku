@@ -49,7 +49,7 @@ namespace asshuku {
                 for (int x = NewImageRect.XLow; x < NewImageRect.XHigh; ++x)
                     q[q_img.WidthStep * (y - NewImageRect.YLow) + (x - NewImageRect.XLow)] = p[p_img.WidthStep * y + x];
         }
-        private unsafe void WhiteCutColor(ref string f, IplImage q_img, Rect NewImageRect) {//階調値線形変換はしない
+        private unsafe void WhiteCutColor(in string f, IplImage q_img, Rect NewImageRect) {//階調値線形変換はしない
             Bitmap bmp = new Bitmap(f);
             BitmapData data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
             byte[] b = new byte[bmp.Width * bmp.Height * 4];
@@ -225,7 +225,7 @@ namespace asshuku {
             }
             return NewHeightWidth;
         }
-        private unsafe bool UselessYRowSpacingDeletion(ref string f) {
+        private unsafe bool UselessYRowSpacingDeletion(in string f) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             int[] FilterMask = new int[Const.Neighborhood4];
@@ -255,7 +255,7 @@ namespace asshuku {
             Cv.ReleaseImage(OutputCutImage);
             return true;
         }
-        private unsafe bool UselessXColumSpacingDeletion(ref string f) {
+        private unsafe bool UselessXColumSpacingDeletion(in string f) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             //IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
@@ -286,7 +286,7 @@ namespace asshuku {
             Cv.ReleaseImage(OutputCutImage);
             return true;
         }
-        private unsafe void NoiseRemoveTwoArea(ref string f, byte max) {
+        private unsafe void NoiseRemoveTwoArea(in string f, byte max) {
             IplImage p_img = Cv.LoadImage(f, LoadMode.GrayScale);
             IplImage q_img = Cv.CreateImage(p_img.Size, BitDepth.U8, 1);
             Cv.Copy(p_img, q_img);
@@ -323,7 +323,7 @@ namespace asshuku {
             Cv.ReleaseImage(q_img);
             Cv.ReleaseImage(p_img);
         }
-        private unsafe void NoiseRemoveWhite(ref string f, byte min) {
+        private unsafe void NoiseRemoveWhite(in string f, byte min) {
             IplImage p_img = Cv.LoadImage(f, LoadMode.GrayScale);
             IplImage q_img = Cv.CreateImage(p_img.Size, BitDepth.U8, 1);
             Cv.Copy(p_img, q_img);
@@ -383,10 +383,10 @@ namespace asshuku {
             if (Image.GetHistgramR(ref f, OriginHistgram) == Is.Color) {//カラーでドット埋めは無理
             } else {
                 FixPixelMissing(in f);//ピクセル欠けを修正
-                NoiseRemoveTwoArea(ref f, OriginHistgram.Max());//小さいゴミ削除
-                NoiseRemoveWhite(ref f, OriginHistgram.Min());//小さいゴミ削除
-                UselessXColumSpacingDeletion(ref f);//空白列削除
-                UselessYRowSpacingDeletion(ref f);//空白行削除
+                NoiseRemoveTwoArea(in f, OriginHistgram.Max());//小さいゴミ削除
+                NoiseRemoveWhite(in f, OriginHistgram.Min());//小さいゴミ削除
+                UselessXColumSpacingDeletion(in f);//空白列削除
+                UselessYRowSpacingDeletion(in f);//空白行削除
             }
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
@@ -414,7 +414,7 @@ namespace asshuku {
                 WhiteCut(InputGrayImage, OutputCutImage, NewImageRect);
                 Image.Transform2Linear(OutputCutImage, ImageToneValue);// 階調値変換
             } else {//Is.Color
-                WhiteCutColor(ref f, OutputCutImage, NewImageRect);//bitmapで読まないと4Byteなのか3Byteなのか曖昧なので統一は出来ない
+                WhiteCutColor(in f, OutputCutImage, NewImageRect);//bitmapで読まないと4Byteなのか3Byteなのか曖昧なので統一は出来ない
             }
             Cv.SaveImage(f, OutputCutImage, new ImageEncodingParam(ImageEncodingID.PngCompression, 0));
             Cv.ReleaseImage(InputGrayImage);
@@ -429,7 +429,7 @@ namespace asshuku {
                 Min = Histgram.Min()
             };
         }
-        private bool CutJPGMarginMain(ref string f, TextWriter writerSync) {
+        private bool CutJPGMarginMain(in string f, TextWriter writerSync) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
@@ -455,7 +455,7 @@ namespace asshuku {
             ExecuteAnotherApp("jpegtran.exe", in Arguments, false, true);
             return true;
         }
-        private void ExecutePNGout(string PathName) {
+        private void ExecutePNGout(in string PathName) {
             IEnumerable<string> PNGFiles = System.IO.Directory.EnumerateFiles(PathName, "*.png", System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
             if (PNGFiles.Any()) {
                 System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();//stop watch get time
@@ -482,7 +482,7 @@ namespace asshuku {
                 if (JPGFiles.Any()) {
                     sw.Restart();
                     Parallel.ForEach(JPGFiles, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                        CutJPGMarginMain(ref f, writerSync);
+                        CutJPGMarginMain(in f, writerSync);
                     });
                     writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
                     sw.Stop(); richTextBox1.Text += ("\nJPGWhiteRemove:" + sw.Elapsed + "\n");
@@ -545,7 +545,7 @@ namespace asshuku {
                 for (int i = 100; i < NewFileName.Length; ++i) NewFileName[i] += (char)(((i - 100) / 36) + 'a') + (y1[(i - 100) % 36]).ToString();
             }
         }
-        private void CarmineCliAuto(string PathName) {//ハフマンテーブルの最適化によってjpgサイズを縮小
+        private void CarmineCliAuto(in string PathName) {//ハフマンテーブルの最適化によってjpgサイズを縮小
             IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*.jpg", System.IO.SearchOption.AllDirectories);//Acquire only jpg files under the path.
             if (files.Any()) {
                 Parallel.ForEach(files, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => {//マルチスレッド化するのでファイル毎
@@ -632,8 +632,8 @@ namespace asshuku {
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(PathName);
                     if (PNGout.Checked)
-                        await Task.Run(() => ExecutePNGout(PathName));
-                    CarmineCliAuto(PathName);
+                        await Task.Run(() => ExecutePNGout(in PathName));
+                    CarmineCliAuto(in PathName);
                     CreateZip(PathName);
                 } else {//ファイルはnewをつくりそこで実行
                     string NewPath = System.IO.Path.GetDirectoryName(PathName) + "\\new\\";
@@ -642,8 +642,8 @@ namespace asshuku {
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(NewPath);//該当ファイルのあるフォルダの奴はすべて実行される別フォルダに単体コピーが理想
                     if (PNGout.Checked)
-                        await Task.Run(() => ExecutePNGout(NewPath));
-                    CarmineCliAuto(NewPath);
+                        await Task.Run(() => ExecutePNGout(in NewPath));
+                    CarmineCliAuto(in NewPath);
                 }
                 ScrollAllTextBox();
             }

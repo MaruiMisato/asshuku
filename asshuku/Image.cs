@@ -75,7 +75,6 @@ public class Image {
             p[y] = Image.CheckRange2Byte(magnification * (p[y] - ImageToneValue.Min));
     }
     public class Filter {
-
         private static byte GetBucketMedianAscendingOrder(int[,] Bucket, int Median, int x) {
             byte YIndex = 0;//256 探索範囲の最小値を探す　
             int ScanHalf = 0;
@@ -113,7 +112,6 @@ public class Image {
             MedianValue = (byte)(YIndex);
             return true;
         }/* */
-
         private static bool GetBucketMedianDescendingOrder(int[] Bucket, int Median, ref byte MedianValue) {
             int YIndex = 256;//256 探索範囲の最小値を探す　
             for (int ScanHalf = 0; ScanHalf < Median; ScanHalf += Bucket[YIndex]) {
