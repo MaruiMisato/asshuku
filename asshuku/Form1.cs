@@ -378,10 +378,26 @@ namespace asshuku {
             Cv.ReleaseImage(FixedImage);
             return true;
         }
+        private static bool Missing(in string f) {
+            IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
+            //IplImage FixedImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            double[,] FixedImage = new double[InputGrayImage.Size.Height, InputGrayImage.Size.Width];
+            DCTNK(InputGrayImage, ref FixedImage);
+
+            //Cv.SaveImage(f + "gg.png", FixedImage, new ImageEncodingParam(ImageEncodingID.PngCompression, 0));
+            IplImage FixedImageggggggg = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            IDCTNK(FixedImageggggggg, in FixedImage);
+            Cv.SaveImage(f + "ggggg.png", FixedImageggggggg, new ImageEncodingParam(ImageEncodingID.PngCompression, 0));
+            Cv.ReleaseImage(InputGrayImage);
+            //Cv.ReleaseImage(FixedImage);
+            Cv.ReleaseImage(FixedImageggggggg);
+            return true;
+        }
         private bool CutPNGMarginMain(ref string f, TextWriter writerSync) {
             byte[] OriginHistgram = new byte[Const.Tone8Bit];
             if (Image.GetHistgramR(ref f, OriginHistgram) == Is.Color) {//カラーでドット埋めは無理
             } else {
+                //Missing(in f);//ピクセル欠けを修正
                 FixPixelMissing(in f);//ピクセル欠けを修正
                 NoiseRemoveTwoArea(in f, OriginHistgram.Max());//小さいゴミ削除
                 NoiseRemoveWhite(in f, OriginHistgram.Min());//小さいゴミ削除
