@@ -483,7 +483,7 @@ namespace asshuku {
             }
         }
         private void RemoveMarginEntry(string PathName) {
-            using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss") + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
+            using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss.") + System.IO.Path.GetFileName(PathName) + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
                 IEnumerable<string> PNGFiles = System.IO.Directory.EnumerateFiles(PathName, "*.png", System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
                 System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();//stop watch get time
                 if (PNGFiles.Any()) {
@@ -666,7 +666,7 @@ namespace asshuku {
             CompressLogsWith7z();
         }
         private void CompressLogsWith7z() {
-            using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss") + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
+            using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss") + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
                 writerSync.WriteLine(richTextBox1.Text);
                 foreach (string LogsItems in logs.Items) {
                     writerSync.WriteLine(LogsItems);//richTextBox1
