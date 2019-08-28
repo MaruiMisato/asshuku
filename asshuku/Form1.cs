@@ -483,26 +483,25 @@ namespace asshuku {
             }
         }
         private void RemoveMarginEntry(string PathName) {
-            using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss.") + System.IO.Path.GetFileName(PathName) + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
-                IEnumerable<string> PNGFiles = System.IO.Directory.EnumerateFiles(PathName, "*.png", System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
-                System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();//stop watch get time
-                if (PNGFiles.Any()) {
-                    sw.Start();
-                    Parallel.ForEach(PNGFiles, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                        CutPNGMarginMain(ref f, writerSync);
-                    });
-                    writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
-                    sw.Stop(); richTextBox1.Text += ("\nPNGWhiteRemove:" + sw.Elapsed);
-                }
-                IEnumerable<string> JPGFiles = System.IO.Directory.EnumerateFiles(PathName, "*.jpg", System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
-                if (JPGFiles.Any()) {
-                    sw.Restart();
-                    Parallel.ForEach(JPGFiles, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => {//Specify the number of concurrent threads(The number of cores is reasonable).
-                        CutJPGMarginMain(in f, writerSync);
-                    });
-                    writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
-                    sw.Stop(); richTextBox1.Text += ("\nJPGWhiteRemove:" + sw.Elapsed + "\n");
-                }
+            using TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss.") + System.IO.Path.GetFileName(PathName) + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")));
+            IEnumerable<string> PNGFiles = System.IO.Directory.EnumerateFiles(PathName, "*.png", System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();//stop watch get time
+            if (PNGFiles.Any()) {
+                sw.Start();
+                Parallel.ForEach(PNGFiles, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                    CutPNGMarginMain(ref f, writerSync);
+                });
+                writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                sw.Stop(); richTextBox1.Text += ("\nPNGWhiteRemove:" + sw.Elapsed);
+            }
+            IEnumerable<string> JPGFiles = System.IO.Directory.EnumerateFiles(PathName, "*.jpg", System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
+            if (JPGFiles.Any()) {
+                sw.Restart();
+                Parallel.ForEach(JPGFiles, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => {//Specify the number of concurrent threads(The number of cores is reasonable).
+                    CutJPGMarginMain(in f, writerSync);
+                });
+                writerSync.WriteLine(DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss"));
+                sw.Stop(); richTextBox1.Text += ("\nJPGWhiteRemove:" + sw.Elapsed + "\n");
             }
 
         }
