@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;//正規表現
 using System.Runtime.InteropServices;//Marshal.Copy(data.Scan0,b,0,b.Length);
 using OpenCvSharp;
 using static Image;
+using static StandardAlgorithm;
 namespace asshuku {
     public partial class Form1 : Form {
         public Form1() {
@@ -170,7 +171,7 @@ namespace asshuku {
             return true;
         }
         private int GetRangeMedianF(IplImage p_img) {
-            return StandardAlgorithm.Math.MakeItOdd((int)Math.Sqrt(Math.Sqrt(Image.GetShortSide(p_img) + 80)));
+            return StandardAlgorithm.Math.MakeItOdd((int)System.Math.Sqrt(System.Math.Sqrt(Image.GetShortSide(p_img) + 80)));
         }
         private byte GetConcentrationThreshold(ToneValue ImageToneValue, double MangaTextConst) {
             return (byte)((ImageToneValue.Max - ImageToneValue.Min) * MangaTextConst / Const.Tone8Bit);
@@ -483,7 +484,7 @@ namespace asshuku {
             }
         }
         private void RemoveMarginEntry(string PathName) {
-            using TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss.") + System.IO.Path.GetFileName(PathName) + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")));
+            using TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss_") + System.IO.Path.GetFileName(PathName) + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")));
             IEnumerable<string> PNGFiles = System.IO.Directory.EnumerateFiles(PathName, "*.png", System.IO.SearchOption.AllDirectories);//Acquire only png files under the path.
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();//stop watch get time
             if (PNGFiles.Any()) {
@@ -506,13 +507,13 @@ namespace asshuku {
 
         }
         private int GetFileNameBeforeChange(IEnumerable<string> files, string[] AllOldFileName) {//ゴミファイルを除去 JPG jpeg PNG png種々あるので
-            int MaxFile = -1;
+            int MaxFile = -1;//ファイル数をカウント
             foreach (string f in files) {
                 FileInfo file = new FileInfo(f);
                 if (file.Extension == ".db" || file.Extension == ".ini") file.Delete();//Disposal of garbage
                 else AllOldFileName[++MaxFile] = f;
             }
-            return ++MaxFile;
+            return ++MaxFile;//ファイル数
         }
         /*
         (file.Name.Length-file.Extension.Length)拡張子を除いたファイル名長さ
@@ -545,7 +546,7 @@ namespace asshuku {
         }
         private void CreateNewFileName(int MaxFile, string[] NewFileName) {
             if (radioButton2.Checked && MaxFile <= 26 * 25) {//7zip under 26*25=650
-                int MaxRoot = (int)Math.Sqrt(MaxFile) + 1;
+                int MaxRoot = (int)System.Math.Sqrt(MaxFile) + 1;
                 richTextBox1.Text += "\nroot MaxRoot" + MaxRoot;
                 for (int i = 0; i < NewFileName.Length; ++i) NewFileName[i] = (char)((i / MaxRoot) + 'a') + ((char)(i % MaxRoot + 'a')).ToString();//26*25  36*35mezasu
             } else if (MaxFile < 35) {//一桁で1-9,a-y
@@ -640,15 +641,18 @@ namespace asshuku {
                 if (File.GetAttributes(PathName).HasFlag(FileAttributes.Directory)) {//フォルダ //JudgeFileOrDirectory
                     IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*", System.IO.SearchOption.TopDirectoryOnly);//Acquire  files  the path.
                     string[] AllOldFileName = new string[files.Count()];//36*25+100 ファイル数 ゴミ込み
-                    int MaxFile = GetFileNameBeforeChange(files, AllOldFileName);//ゴミ処理
                     if (WhetherToRename.Checked)//リネームするか？
-                        if (!RenameFiles(PathName, files, AllOldFileName, MaxFile))
+                        if (!RenameFiles(PathName, files, AllOldFileName, GetFileNameBeforeChange(files, AllOldFileName)))
                             return;//リネーム失敗
+                    long[] FilesSize = new long[2];
+                    FilesSize[0] = StandardAlgorithm.Directory.GetDirectorySize(new DirectoryInfo(PathName));
                     if (OptimizeTheImages.Checked)
                         RemoveMarginEntry(PathName);
                     if (PNGout.Checked)
                         await Task.Run(() => ExecutePNGout(in PathName));
                     CarmineCliAuto(in PathName);
+                    FilesSize[1] = StandardAlgorithm.Directory.GetDirectorySize(new DirectoryInfo(PathName));
+                    DiplayFileSize(FilesSize);
                     CreateZip(PathName);
                 } else {//ファイルはnewをつくりそこで実行
                     string NewPath = System.IO.Path.GetDirectoryName(PathName) + "\\new\\";
@@ -664,6 +668,13 @@ namespace asshuku {
             }
             CompressLogsWith7z();
         }
+
+        private void DiplayFileSize(long[] FilesSize) {
+            richTextBox1.Text += "BeforeFileSize:" + FilesSize[0] + " Byte";
+            richTextBox1.Text += "\nAfterFilesaize:" + FilesSize[1] + " Byte";//Magnification
+            richTextBox1.Text += "\nMagnification:" + ((double)FilesSize[1] / FilesSize[0]) * 100 + " %";
+        }
+
         private void CompressLogsWith7z() {
             using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss") + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
                 writerSync.WriteLine(richTextBox1.Text);

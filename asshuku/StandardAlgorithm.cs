@@ -1,3 +1,4 @@
+using System.IO;
 public class StandardAlgorithm {
     public class Sort {
         public static void Bubble(byte[] numbers) {
@@ -19,6 +20,18 @@ public class StandardAlgorithm {
         }
     }
     public class Directory {
+        /// フォルダのサイズを取得する
+        // </summary>
+        // <param name="dirInfo">サイズを取得するフォルダ</param>
+        // <returns>フォルダのサイズ（バイト）</returns>
+        public static long GetDirectorySize(DirectoryInfo dirInfo) {
+            long size = 0;
+            foreach (FileInfo fi in dirInfo.GetFiles())//フォルダ内の全ファイルの合計サイズを計算する
+                size += fi.Length;
+            //foreach (DirectoryInfo di in dirInfo.GetDirectories())//サブフォルダのサイズを合計していく
+            //    size += GetDirectorySize(di);
+            return size;
+        }
         public string[] GetFolderName(string Folder_Name) {// 指定フォルダの直下にある全てのフォルダ名を取得するメソッド// 第１引数Folder_Name: 対象のフォルダ
             string[] Folder_List; // フォルダ名格納用配列
             if (System.IO.Directory.Exists(Folder_Name) == false) {// 指定フォルダが無い場合
