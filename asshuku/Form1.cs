@@ -190,9 +190,8 @@ namespace asshuku {
             } else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
                 Image.Filter.FastestMedian(InputGrayImage, MedianImage, GetRangeMedianF(InputGrayImage));
             }
-            int[] FilterMask = new int[Const.Neighborhood8];
-            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), MedianImage, LaplacianImage);
-
+            //Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(new int[Const.Neighborhood8]), MedianImage, LaplacianImage);
+            Cv.Laplace(LaplacianImage, MedianImage, ApertureSize.Size1);
 #if (DEBUG_SAVE)
                 Debug.SaveImage(InputGrayImage,nameof(InputGrayImage));//debug
                 Debug.SaveImage(MedianImage,nameof(MedianImage));//debug
@@ -215,7 +214,7 @@ namespace asshuku {
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
 #endif
             }
-            if (StrongMode.Checked) {
+            if (StrongMode.Checked) {//StrongModeではオ－プニング処理を追加し，ゴミ微小領域を消滅する
                 IplConvKernel element = Cv.CreateStructuringElementEx(3, 3, 1, 1, ElementShape.Rect, null);
                 Cv.MorphologyEx(LaplacianImage, LaplacianImage, MedianImage, element, MorphologyOperation.Open, 1);//input output temp 矩形,種類,回数
 #if (DEBUG_SAVE)
