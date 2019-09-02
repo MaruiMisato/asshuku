@@ -191,7 +191,7 @@ namespace asshuku {
                 Image.Filter.FastestMedian(InputGrayImage, MedianImage, GetRangeMedianF(InputGrayImage));
             }
             //Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(new int[Const.Neighborhood8]), MedianImage, LaplacianImage);
-            Cv.Laplace(LaplacianImage, MedianImage, ApertureSize.Size1);
+            Cv.Laplace(MedianImage, LaplacianImage, ApertureSize.Size1);
 #if (DEBUG_SAVE)
                 Debug.SaveImage(InputGrayImage,nameof(InputGrayImage));//debug
                 Debug.SaveImage(MedianImage,nameof(MedianImage));//debug
@@ -202,7 +202,6 @@ namespace asshuku {
                 Debug.DisplayImage(MedianImage,nameof(MedianImage));//debug
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
 #endif
-
             if (WeakMode.Checked) {
                 //Image.Filter.FastestMedian(LaplacianImage, 0);//小説Textはメディアンフィルタ適用外
             } else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
@@ -238,8 +237,9 @@ namespace asshuku {
         private unsafe bool UselessYRowSpacingDeletion(in string f) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            int[] FilterMask = new int[Const.Neighborhood4];
-            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            //int[] FilterMask = new int[Const.Neighborhood4];
+            //Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            Cv.Laplace(InputGrayImage, LaplacianImage, ApertureSize.Size1);
             byte* p = (byte*)LaplacianImage.ImageData;
             int[] TargetYRow = new int[LaplacianImage.Height];//TargetYRow[y]が閾値以下ならその行を削除
             for (int y = 0; y < LaplacianImage.Height; y++)
@@ -269,8 +269,9 @@ namespace asshuku {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             //IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            int[] FilterMask = new int[Const.Neighborhood4];
-            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            //int[] FilterMask = new int[Const.Neighborhood4];
+            //Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            Cv.Laplace(InputGrayImage, LaplacianImage, ApertureSize.Size1);
             byte* p = (byte*)LaplacianImage.ImageData;
             int[] TargetXColumn = new int[LaplacianImage.Width];//TargetRow[x]が閾値以下ならその行を削除
             for (int y = 0; y < LaplacianImage.Height; y++)
