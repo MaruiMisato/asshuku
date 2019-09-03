@@ -129,7 +129,7 @@
             // 
             this.radioButton5.AutoSize = true;
             this.radioButton5.Checked = true;
-            this.radioButton5.Location = new System.Drawing.Point(6, 52);
+            this.radioButton5.Location = new System.Drawing.Point(6, 54);
             this.radioButton5.Name = "radioButton5";
             this.radioButton5.Size = new System.Drawing.Size(60, 16);
             this.radioButton5.TabIndex = 11;
@@ -140,7 +140,7 @@
             // radioButton6
             // 
             this.radioButton6.AutoSize = true;
-            this.radioButton6.Location = new System.Drawing.Point(6, 71);
+            this.radioButton6.Location = new System.Drawing.Point(6, 77);
             this.radioButton6.Name = "radioButton6";
             this.radioButton6.Size = new System.Drawing.Size(49, 16);
             this.radioButton6.TabIndex = 12;
@@ -151,7 +151,7 @@
             // 
             this.OptimizeTheImages.AutoSize = true;
             this.OptimizeTheImages.Checked = true;
-            this.OptimizeTheImages.Location = new System.Drawing.Point(9, 14);
+            this.OptimizeTheImages.Location = new System.Drawing.Point(6, 14);
             this.OptimizeTheImages.Name = "OptimizeTheImages";
             this.OptimizeTheImages.Size = new System.Drawing.Size(64, 16);
             this.OptimizeTheImages.TabIndex = 0;
@@ -188,9 +188,9 @@
             this.groupBox2.Controls.Add(this.radioButton6);
             this.groupBox2.Controls.Add(this.radioButton5);
             this.groupBox2.Controls.Add(this.radioButton4);
-            this.groupBox2.Location = new System.Drawing.Point(513, 1);
+            this.groupBox2.Location = new System.Drawing.Point(543, 1);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(101, 90);
+            this.groupBox2.Size = new System.Drawing.Size(71, 100);
             this.groupBox2.TabIndex = 12;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Compress Level";
@@ -201,9 +201,9 @@
             this.groupBox3.Controls.Add(this.PNGout);
             this.groupBox3.Controls.Add(this.DoNotOptimizeTheImages);
             this.groupBox3.Controls.Add(this.OptimizeTheImages);
-            this.groupBox3.Location = new System.Drawing.Point(336, 16);
+            this.groupBox3.Location = new System.Drawing.Point(332, 16);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(175, 86);
+            this.groupBox3.Size = new System.Drawing.Size(208, 86);
             this.groupBox3.TabIndex = 14;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "MarginRemove + PNGOptimize";
@@ -213,9 +213,9 @@
             this.groupBox4.Controls.Add(this.WeakMode);
             this.groupBox4.Controls.Add(this.StrongMode);
             this.groupBox4.Controls.Add(this.MidMode);
-            this.groupBox4.Location = new System.Drawing.Point(5, 30);
+            this.groupBox4.Location = new System.Drawing.Point(1, 30);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(156, 36);
+            this.groupBox4.Size = new System.Drawing.Size(207, 36);
             this.groupBox4.TabIndex = 21;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Shaving";
@@ -223,28 +223,28 @@
             // WeakMode
             // 
             this.WeakMode.AutoSize = true;
-            this.WeakMode.Location = new System.Drawing.Point(6, 14);
+            this.WeakMode.Location = new System.Drawing.Point(3, 14);
             this.WeakMode.Name = "WeakMode";
-            this.WeakMode.Size = new System.Drawing.Size(50, 16);
+            this.WeakMode.Size = new System.Drawing.Size(83, 16);
             this.WeakMode.TabIndex = 18;
-            this.WeakMode.Text = "Weak";
+            this.WeakMode.Text = "Weak(Novel";
             this.WeakMode.UseVisualStyleBackColor = true;
             // 
             // StrongMode
             // 
             this.StrongMode.AutoSize = true;
-            this.StrongMode.Location = new System.Drawing.Point(101, 14);
+            this.StrongMode.Location = new System.Drawing.Point(122, 14);
             this.StrongMode.Name = "StrongMode";
-            this.StrongMode.Size = new System.Drawing.Size(56, 16);
+            this.StrongMode.Size = new System.Drawing.Size(85, 16);
             this.StrongMode.TabIndex = 20;
-            this.StrongMode.Text = "Strong";
+            this.StrongMode.Text = "Strong(Dirty";
             this.StrongMode.UseVisualStyleBackColor = true;
             // 
             // MidMode
             // 
             this.MidMode.AutoSize = true;
             this.MidMode.Checked = true;
-            this.MidMode.Location = new System.Drawing.Point(62, 14);
+            this.MidMode.Location = new System.Drawing.Point(86, 14);
             this.MidMode.Name = "MidMode";
             this.MidMode.Size = new System.Drawing.Size(41, 16);
             this.MidMode.TabIndex = 19;
@@ -257,7 +257,7 @@
             this.PNGout.AutoSize = true;
             this.PNGout.Checked = true;
             this.PNGout.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.PNGout.Location = new System.Drawing.Point(7, 66);
+            this.PNGout.Location = new System.Drawing.Point(4, 66);
             this.PNGout.Name = "PNGout";
             this.PNGout.Size = new System.Drawing.Size(63, 16);
             this.PNGout.TabIndex = 17;
@@ -266,9 +266,9 @@
             // 
             // BrowserButton
             // 
-            this.BrowserButton.Location = new System.Drawing.Point(277, 1);
+            this.BrowserButton.Location = new System.Drawing.Point(276, 1);
             this.BrowserButton.Name = "BrowserButton";
-            this.BrowserButton.Size = new System.Drawing.Size(56, 101);
+            this.BrowserButton.Size = new System.Drawing.Size(55, 101);
             this.BrowserButton.TabIndex = 13;
             this.BrowserButton.Text = "Folder\r\nBrowser\r\nDialog";
             this.BrowserButton.UseVisualStyleBackColor = true;
@@ -281,9 +281,9 @@
             this.WhetherToRename.CheckState = System.Windows.Forms.CheckState.Checked;
             this.WhetherToRename.Location = new System.Drawing.Point(337, 1);
             this.WhetherToRename.Name = "WhetherToRename";
-            this.WhetherToRename.Size = new System.Drawing.Size(65, 16);
+            this.WhetherToRename.Size = new System.Drawing.Size(125, 16);
             this.WhetherToRename.TabIndex = 15;
-            this.WhetherToRename.Text = "Rename";
+            this.WhetherToRename.Text = "ExecutFilesRename";
             this.WhetherToRename.UseVisualStyleBackColor = true;
             // 
             // Form1

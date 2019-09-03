@@ -534,7 +534,7 @@ namespace asshuku {
                 while ((file.Name.Length - file.Extension.Length) < 3)
                     if (System.IO.File.Exists(PathName + "/0" + file.Name)) {//重複
                         richTextBox1.Text += "\n:" + PathName + "/0" + file.Name + ":Exists";
-                        MessageBox.Show("ff");
+                        MessageBox.Show("Files nama are Duplicate");
                         return false;
                     } else file.MoveTo(PathName + "/0" + file.Name);//0->000  1000枚までしか無理 7zは650枚
                 if (file.Name[0] == 'z')
@@ -553,21 +553,18 @@ namespace asshuku {
             }/**/
         }
         private void CreateNewFileName(int MaxFile, string[] NewFileName) {
-            if (radioButton2.Checked && MaxFile <= 26 * 25) {//7zip under 26*25=650
+            string NewNamesFilesPath = @"NewName1000.csv";//zip under 36*25+100=1000
+            if (MaxFile <= 36)//一桁で0-9,a-z=36
+                NewNamesFilesPath = @"NewName36.csv";
+            else if (radioButton2.Checked && MaxFile <= 26 * 25) {//7zip under 26*25=650未満 かつ37以上
                 int MaxRoot = (int)System.Math.Sqrt(MaxFile) + 1;
                 richTextBox1.Text += "\nroot MaxRoot" + MaxRoot;
                 for (int i = 0; i < NewFileName.Length; ++i) NewFileName[i] = (char)((i / MaxRoot) + 'a') + ((char)(i % MaxRoot + 'a')).ToString();//26*25  36*35mezasu
-            } else if (MaxFile < 35) {//一桁で0-9,a-y
-                for (int i = 0; i < NewFileName.Length && i < 10; ++i) NewFileName[i] = i.ToString();//0 ~ 9
-                for (int i = 10; i < NewFileName.Length; ++i) NewFileName[i] = ((char)((i - 10) + 'a')).ToString();//a~y
-            } else {//zip under 36*25+100=1000
-                for (int i = 0; (i < NewFileName.Length) && (i < 100); ++i) NewFileName[i] = i.ToString();//0 ~ 99 zipではこの法が軽い
-                if (MaxFile < 100) return;
-                char[] y1 = new char[36];
-                for (int i = 0; i < 10; ++i) y1[i] = (char)(i + '0');//0 ~ 9
-                for (int i = 10; i < y1.Length; ++i) y1[i] = (char)(i - 10 + 'a');//a~y
-                for (int i = 100; i < NewFileName.Length; ++i) NewFileName[i] += (char)(((i - 100) / 36) + 'a') + (y1[(i - 100) % 36]).ToString();
+                return;
             }
+            using StreamReader sr = new StreamReader(NewNamesFilesPath);
+            for (int i = 0; i < NewFileName.Length; ++i) // 末尾まで繰り返す
+                NewFileName[i] = sr.ReadLine();// CSVファイルの一行を読み込む
         }
         private void CarmineCliAuto(in string PathName) {//ハフマンテーブルの最適化によってjpgサイズを縮小
             IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*.jpg", System.IO.SearchOption.AllDirectories);//Acquire only jpg files under the path.

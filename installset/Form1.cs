@@ -171,27 +171,27 @@ namespace asshuku {
             return true;
         }
         private int GetRangeMedianF(IplImage p_img) {
-            return StandardAlgorithm.Math.MakeItOdd((int)System.Math.Sqrt(System.Math.Sqrt(Image.GetShortSide(p_img) + 80)));
+            return StandardAlgorithm.Math.MakeItOdd((int)System.Math.Sqrt(System.Math.Sqrt(Image.GetShortSide(p_img) + 80)));//短辺+80の四乗根
         }
         private byte GetConcentrationThreshold(ToneValue ImageToneValue, double MangaTextConst) {
             return (byte)((ImageToneValue.Max - ImageToneValue.Min) * MangaTextConst / Const.Tone8Bit);
         }
         private double GetMangaTextConst() {//図表がマンガ 小説がText それぞれ画像密度が違うので 閾値を変更したい、
-            if (!MangaOrTextMode.Checked) {//故にこの定数を使って閾値を変える
+            if (WeakMode.Checked) {//故にこの定数を使って閾値を変える
                 return 15;//小説Text
             } else {
-                return 25;//図表マンガ
+                return 25;//図表マンガ 25=256*10%
             }
         }
-        private bool MedianLaplacianMedian(IplImage InputGrayImage, IplImage MedianImage, IplImage LaplacianImage) {
-            if (!MangaOrTextMode.Checked) {
-                Image.Filter.FastestMedian(InputGrayImage, MedianImage, 0);//小説Textはメディアンフィルタ適用外
+        private bool MedianLaplacianMedian(IplImage InputGrayImage, IplImage LaplacianImage) {
+            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            if (WeakMode.Checked) {
+                Cv.Copy(InputGrayImage, MedianImage);//小説Textはメディアンフィルタ適用外
             } else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
                 Image.Filter.FastestMedian(InputGrayImage, MedianImage, GetRangeMedianF(InputGrayImage));
             }
-            int[] FilterMask = new int[Const.Neighborhood8];
-            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), MedianImage, LaplacianImage);
-
+            //Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(new int[Const.Neighborhood8]), MedianImage, LaplacianImage);
+            Cv.Laplace(MedianImage, LaplacianImage, ApertureSize.Size1);
 #if (DEBUG_SAVE)
                 Debug.SaveImage(InputGrayImage,nameof(InputGrayImage));//debug
                 Debug.SaveImage(MedianImage,nameof(MedianImage));//debug
@@ -202,20 +202,28 @@ namespace asshuku {
                 Debug.DisplayImage(MedianImage,nameof(MedianImage));//debug
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
 #endif
-
-            Cv.ReleaseImage(MedianImage);
-            if (!MangaOrTextMode.Checked) {
-                Image.Filter.FastestMedian(LaplacianImage, 0);//小説Textはメディアンフィルタ適用外
+            if (WeakMode.Checked) {
+                //Image.Filter.FastestMedian(LaplacianImage, 0);//小説Textはメディアンフィルタ適用外
             } else {//図表マンガ メディアンフィルタ実行 画像サイズに応じてマスクサイズを決める
                 Image.Filter.FastestMedian(LaplacianImage, GetRangeMedianF(LaplacianImage));
-            }
-
 #if (DEBUG_SAVE)
                 Debug.SaveImage(LaplacianImage,nameof(LaplacianImage));//debug
 #endif
 #if (DEBUG_DISPLAY)
                 Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
 #endif
+            }
+            if (StrongMode.Checked) {//StrongModeではオ－プニング処理を追加し，ゴミ微小領域を消滅する
+                IplConvKernel element = Cv.CreateStructuringElementEx(3, 3, 1, 1, ElementShape.Rect, null);
+                Cv.MorphologyEx(LaplacianImage, LaplacianImage, MedianImage, element, MorphologyOperation.Open, 1);//input output temp 矩形,種類,回数
+#if (DEBUG_SAVE)
+                Debug.SaveImage(LaplacianImage,nameof(LaplacianImage));//debug
+#endif
+#if (DEBUG_DISPLAY)
+                Debug.DisplayImage(LaplacianImage,nameof(LaplacianImage));//debug
+#endif
+            }
+            Cv.ReleaseImage(MedianImage);
             return true;
         }
         private int GetNewHeightWidth(int[] TargetXColumnYRow, int HeightWidth, int InstanceThreshold) {
@@ -229,8 +237,9 @@ namespace asshuku {
         private unsafe bool UselessYRowSpacingDeletion(in string f) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            int[] FilterMask = new int[Const.Neighborhood4];
-            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            //int[] FilterMask = new int[Const.Neighborhood4];
+            //Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            Cv.Laplace(InputGrayImage, LaplacianImage, ApertureSize.Size1);
             byte* p = (byte*)LaplacianImage.ImageData;
             int[] TargetYRow = new int[LaplacianImage.Height];//TargetYRow[y]が閾値以下ならその行を削除
             for (int y = 0; y < LaplacianImage.Height; y++)
@@ -260,8 +269,9 @@ namespace asshuku {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
             //IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
             IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            int[] FilterMask = new int[Const.Neighborhood4];
-            Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            //int[] FilterMask = new int[Const.Neighborhood4];
+            //Image.Filter.ApplyMask(Image.Filter.SetMask.Laplacian(FilterMask), InputGrayImage, LaplacianImage);
+            Cv.Laplace(InputGrayImage, LaplacianImage, ApertureSize.Size1);
             byte* p = (byte*)LaplacianImage.ImageData;
             int[] TargetXColumn = new int[LaplacianImage.Width];//TargetRow[x]が閾値以下ならその行を削除
             for (int y = 0; y < LaplacianImage.Height; y++)
@@ -406,9 +416,8 @@ namespace asshuku {
                 UselessYRowSpacingDeletion(in f);//空白行削除
             }
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
-            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
-            MedianLaplacianMedian(InputGrayImage, MedianImage, LaplacianImage);//MedianLaplacianMedianをかけて画像平滑化
+            IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            MedianLaplacianMedian(InputGrayImage, LaplacianImage);//MedianLaplacianMedianをかけて画像平滑化
             GetImageToneValue(f, out int Channel, out ToneValue ImageToneValue);
             if (ImageToneValue.Max == ImageToneValue.Min) {//豆腐
                 Cv.ReleaseImage(InputGrayImage);
@@ -448,9 +457,8 @@ namespace asshuku {
         }
         private bool CutJPGMarginMain(in string f, TextWriter writerSync) {
             IplImage InputGrayImage = Cv.LoadImage(f, LoadMode.GrayScale);//
-            IplImage MedianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
-            IplImage LaplacianImage = Cv.CreateImage(MedianImage.Size, BitDepth.U8, 1);
-            MedianLaplacianMedian(InputGrayImage, MedianImage, LaplacianImage);
+            IplImage LaplacianImage = Cv.CreateImage(InputGrayImage.Size, BitDepth.U8, 1);
+            MedianLaplacianMedian(InputGrayImage, LaplacianImage);
             GetImageToneValue(f, Channel: out _, out ToneValue ImageToneValue);
             if (ImageToneValue.Max == ImageToneValue.Min) {//豆腐
                 Cv.ReleaseImage(InputGrayImage);
@@ -549,7 +557,7 @@ namespace asshuku {
                 int MaxRoot = (int)System.Math.Sqrt(MaxFile) + 1;
                 richTextBox1.Text += "\nroot MaxRoot" + MaxRoot;
                 for (int i = 0; i < NewFileName.Length; ++i) NewFileName[i] = (char)((i / MaxRoot) + 'a') + ((char)(i % MaxRoot + 'a')).ToString();//26*25  36*35mezasu
-            } else if (MaxFile < 35) {//一桁で1-9,a-y
+            } else if (MaxFile < 35) {//一桁で0-9,a-y
                 for (int i = 0; i < NewFileName.Length && i < 10; ++i) NewFileName[i] = i.ToString();//0 ~ 9
                 for (int i = 10; i < NewFileName.Length; ++i) NewFileName[i] = ((char)((i - 10) + 'a')).ToString();//a~y
             } else {//zip under 36*25+100=1000
@@ -563,11 +571,8 @@ namespace asshuku {
         }
         private void CarmineCliAuto(in string PathName) {//ハフマンテーブルの最適化によってjpgサイズを縮小
             IEnumerable<string> files = System.IO.Directory.EnumerateFiles(PathName, "*.jpg", System.IO.SearchOption.AllDirectories);//Acquire only jpg files under the path.
-            if (files.Any()) {
-                Parallel.ForEach(files, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => {//マルチスレッド化するのでファイル毎
-                    ExecuteAnotherApp("carmine_cli.exe", "\"" + f + "\" -o", false, true);
-                });
-            }
+            if (files.Any())
+                Parallel.ForEach(files, new ParallelOptions() { MaxDegreeOfParallelism = System.Environment.ProcessorCount }, f => ExecuteAnotherApp("carmine_cli.exe", "\"" + f + "\" -o", false, true));//マルチスレッド化するのでファイル毎
         }
         private void ExecuteAnotherApp(in string FileName, in string Arguments, bool UseShellExecute, bool CreateNoWindow) {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo {
@@ -668,13 +673,11 @@ namespace asshuku {
             }
             CompressLogsWith7z();
         }
-
         private void DiplayFileSize(long[] FilesSize) {
             richTextBox1.Text += "BeforeFileSize:" + FilesSize[0] + " Byte";
             richTextBox1.Text += "\nAfterFilesaize:" + FilesSize[1] + " Byte";//Magnification
             richTextBox1.Text += "\nMagnification:" + ((double)FilesSize[1] / FilesSize[0]) * 100 + " %";
         }
-
         private void CompressLogsWith7z() {
             using (TextWriter writerSync = TextWriter.Synchronized(new StreamWriter(DateTime.Now.ToString("HH.mm.ss") + ".log", false, System.Text.Encoding.GetEncoding("shift_jis")))) {
                 writerSync.WriteLine(richTextBox1.Text);
@@ -720,15 +723,10 @@ namespace asshuku {
             richTextBox1.Text = fbd.SelectedPath;//Show path
             Clipboard.SetFileDropList(new System.Collections.Specialized.StringCollection() { fbd.SelectedPath });//コピーするファイルのパスをStringCollectionに追加する. Copy to clipboard
         }
-        private void MangaOrTextMode_CheckedChanged(object sender, EventArgs e) {
-            MangaOrTextMode.Text = "Text mode";
-            if (MangaOrTextMode.Checked)
-                MangaOrTextMode.Text = "Manga mode";
-        }
         private void DoNotOptimizeTheImages_CheckedChanged(object sender, EventArgs e) {
-            MangaOrTextMode.Visible = true;
+            groupBox4.Visible = true;
             if (DoNotOptimizeTheImages.Checked)
-                MangaOrTextMode.Visible = false;
+                groupBox4.Visible = false;
         }
     }
 }
