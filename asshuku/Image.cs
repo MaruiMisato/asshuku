@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System;
-using System.Windows.Forms;
+//using System.Windows.Forms;
 public class Image {
     private static unsafe void Median8(IplImage src_img, IplImage dst_img) {
         Cv.Copy(src_img, dst_img);

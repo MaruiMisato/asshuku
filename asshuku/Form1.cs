@@ -14,7 +14,7 @@ using System.Text.RegularExpressions;//正規表現
 using System.Runtime.InteropServices;//Marshal.Copy(data.Scan0,b,0,b.Length);
 using OpenCvSharp;
 using static Image;
-using static StandardAlgorithm;
+//using static StandardAlgorithm;
 namespace asshuku {
     public partial class Form1 : Form {
         public Form1() {
@@ -466,7 +466,6 @@ namespace asshuku {
                 return false;
             }
             Rect NewImageRect = new Rect();
-            //ImageThreshold.Concentration=GetConcentrationThreshold(ImageToneValue);//勾配が重要？
             if (!GetNewImageSize(LaplacianImage, new Threshold { Concentration = GetConcentrationThreshold(ImageToneValue, GetMangaTextConst()) }, NewImageRect)) {
                 Cv.ReleaseImage(InputGrayImage);
                 Cv.ReleaseImage(LaplacianImage);
@@ -552,7 +551,7 @@ namespace asshuku {
                 new FileInfo(f).MoveTo(AllOldFileName[i++]);//000->z000
             }/**/
         }
-        private void CreateNewFileName(int MaxFile, string[] NewFileName) {
+        private void CreateOrGetNewFileName(int MaxFile, string[] NewFileName) {
             string NewNamesFilesPath = @"NewName1000.csv";//zip under 36*25+100=1000
             if (MaxFile <= 36)//一桁で0-9,a-z=36
                 NewNamesFilesPath = @"NewName36.csv";
@@ -689,7 +688,7 @@ namespace asshuku {
                 return false;
             if (SortFiles(MaxFile, PathName, AllOldFileName)) {//ソートできるファイルか
                 string[] NewFileName = new string[MaxFile];
-                CreateNewFileName(MaxFile, NewFileName);
+                CreateOrGetNewFileName(MaxFile, NewFileName);
                 ReNameAlfaBeta(PathName, ref files, NewFileName);
                 ScrollAllTextBox();
                 return true;
