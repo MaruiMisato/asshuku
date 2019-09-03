@@ -583,10 +583,10 @@ namespace asshuku {
             string Arguments;
             if (radioButton3.Checked) {//winrar
                 Extension = ".rar";
+                string CompressLevel = " -m5 ";//compress level max
                 if (radioButton6.Checked)//non compress
-                    Arguments = " a \"" + PathName + ".rar\" -rr5 -mt" + System.Environment.ProcessorCount + "-m0 -ep \"" + PathName + "\"";
-                else//compress level max
-                    Arguments = " a \"" + PathName + ".rar\" -rr5 -mt" + System.Environment.ProcessorCount + " -m5 -ep \"" + PathName + "\"";
+                    CompressLevel = " -m0 ";
+                Arguments = " a \"" + PathName + Extension + "\" -rr5 -mt" + System.Environment.ProcessorCount + CompressLevel + "-ep \"" + PathName + "\"";
                 /*a             書庫にファイルを圧縮
                   rr[N]         リカバリレコードを付加
                   m<0..5>       圧縮方式を指定 (0-無圧縮...5-標準...5-最高圧縮)
@@ -594,13 +594,13 @@ namespace asshuku {
                   ep            名前からパスを除外*/
             } else {
                 FileName = "7z.exe";
+                string CompressLevel = " ";//compress level default
                 if (radioButton2.Checked) Extension = ".7z";
-                if (radioButton5.Checked)
-                    Arguments = "a \"" + PathName + Extension + "\" -mmt=on \"" + PathName + "\\*\"";
+                if (radioButton6.Checked)
+                    CompressLevel = " -mx0 ";//compress non
                 else if (radioButton4.Checked)
-                    Arguments = "a \"" + PathName + Extension + "\" -mmt=on -mx9 \"" + PathName + "\\*\"";
-                else
-                    Arguments = "a \"" + PathName + Extension + "\" -mmt=on -mx0 \"" + PathName + "\\*\"";
+                    CompressLevel = " -mx9 ";//compress level max
+                Arguments = "a \"" + PathName + Extension + "\" -mmt=on" + CompressLevel + "\"" + PathName + "\\*\"";
             }
             ExecuteAnotherApp(in FileName, in Arguments, false, true);
             RenameNumberOnlyFile(PathName, Extension);
@@ -681,7 +681,7 @@ namespace asshuku {
                     writerSync.WriteLine(LogsItems);//richTextBox1
                 }
             }
-            ExecuteAnotherApp("7z.exe", "a " + DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss") + ".7z *.log -sdel", false, true);
+            ExecuteAnotherApp("7z.exe", "a " + DateTime.Now.ToString("yyyy.MM.dd.HH.mm.ss") + ".7z *.log -sdel -mx9 ", false, true);
         }
         private bool RenameFiles(string PathName, IEnumerable<string> files, string[] AllOldFileName, int MaxFile) {
             if (!IsTheNumberOfFilesAppropriate(MaxFile))//個数
